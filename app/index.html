@@ -12,7 +12,6 @@
   <link rel="stylesheet" href="/styles.css">
   <script>
     (function () {
-      // Solo apps del portafolio: nada de URLs arbitrarias.
       var APPS = {
         "piano-magic": ["piano-magic", "/piano-magic/"],
         "cozy-cat-cafe": ["Cozy Cat Café", "/cozy-cat-cafe/"],
@@ -49,7 +48,6 @@
       var frame = document.getElementById("app-frame");
       frame.title = app.name;
       frame.addEventListener("load", function () { frame.focus(); });
-      // replace: no agrega una entrada extra al historial.
       frame.contentWindow.location.replace(app.url);
     })();
   </script>
