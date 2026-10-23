@@ -29,3 +29,15 @@ footer{color:var(--dim);padding-top:32px;padding-bottom:40px;font-size:.9rem}
 .dock a{color:var(--text);text-decoration:none}
 .dock-home{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700}
 .dock-home:hover,.dock-home:focus-visible{filter:brightness(1.1)}
+.card .proyecto{margin:0 16px 12px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:.82rem;line-height:1.35}
+.card .proyecto p{margin:0;font-size:inherit}
+.card .proyecto-fase{color:var(--text);font-weight:600}
+.proyecto-barra{height:4px;margin:6px 0;border-radius:999px;background:var(--line);overflow:hidden}
+.proyecto-barra span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease}
+.card .proyecto-objetivo{color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.proyecto.estado-2 .proyecto-fase{color:#ffb36b}
+.proyecto.estado-4 .proyecto-fase{color:#7fe0a8}
+.proyecto.descartada{opacity:.75}
+.proyecto.descartada .proyecto-fase{color:var(--dim)}
+.proyecto.descartada .proyecto-barra span{background:var(--dim)}
+@media (prefers-reduced-motion:reduce){.proyecto-barra span{transition:none}}
