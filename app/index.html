@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Juegos y herramientas en el navegador</title>
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#14121f">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script>
+    (function () {
+      // Solo apps del portafolio: nada de URLs arbitrarias.
+      var APPS = {
+        "piano-magic": ["piano-magic", "/piano-magic/"],
+        "cozy-cat-cafe": ["Cozy Cat Café", "/cozy-cat-cafe/"],
+        "sweep-route": ["Sweep Route", "/sweep-route/"],
+        "piano-transcribe": ["piano-transcribe", "/piano-transcribe/"],
+        "planes-swipe": ["planes-swipe", "/planes-swipe/?demo=1"],
+        "food-log": ["food-log", "/food-log/"],
+        "floodit-party": ["Flood-It Party", "/floodit-party/"],
+        "clickomania-party": ["Clickomania Party", "/clickomania-party/"],
+        "hexasort-party-v2": ["HexaSort Party", "/hexasort-party-v2/"],
+        "vidabalance-v2": ["VidaBalance", "/vidabalance-v2/"]
+      };
+      if (window.top !== window.self) { window.top.location.replace(location.href); return; }
+      var slug = new URLSearchParams(location.search).get("app");
+      var app = slug && Object.prototype.hasOwnProperty.call(APPS, slug) ? APPS[slug] : null;
+      if (!app) { location.replace("/"); return; }
+      window.__APP__ = { name: app[0], url: app[1] };
+      document.title = app[0] + " · Juegos y herramientas en el navegador";
+    })();
+  </script>
+</head>
+<body class="player">
+  <iframe id="app-frame" title="App" allow="microphone; midi; fullscreen; autoplay; clipboard-write; gamepad" allowfullscreen></iframe>
+  <nav class="dock" aria-label="Navegación del visor">
+    <a class="dock-home" href="/" aria-label="Volver al portafolio">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3.2 2.5 11.1l1.3 1.5L5 11.6V20a1 1 0 0 0 1 1h4.5v-6h3v6H18a1 1 0 0 0 1-1v-8.4l1.2 1 1.3-1.5z"/></svg>
+      <span>Inicio</span>
+    </a>
+  </nav>
+  <script>
+    (function () {
+      var app = window.__APP__;
+      if (!app) return;
+      var frame = document.getElementById("app-frame");
+      frame.title = app.name;
+      frame.addEventListener("load", function () { frame.focus(); });
+      // replace: no agrega una entrada extra al historial.
+      frame.contentWindow.location.replace(app.url);
+    })();
+  </script>
+</body>
+</html>
