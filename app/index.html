@@ -9,7 +9,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/styles.css?v=2">
+  <link rel="stylesheet" href="/styles.css?v=3">
   <script>
     (function () {
       var APPS = {
@@ -26,7 +26,24 @@
       };
       if (window.top !== window.self) { window.top.location.replace(location.href); return; }
       var slug = new URLSearchParams(location.search).get("app");
-      var app = slug && Object.prototype.hasOwnProperty.call(APPS, slug) ? APPS[slug] : null;
+      var CLAVE = "portafolio.v1.proyectos";
+      var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+      function agregada(s) {
+        if (!s || !SLUG_RE.test(s)) return null;
+        var dueno = location.hostname.toLowerCase().replace(/\.github\.io$/, "");
+        var datos = null;
+        try { datos = JSON.parse(window.localStorage.getItem(CLAVE)); } catch (e) { return null; }
+        if (!datos || datos.v !== 1 || !Array.isArray(datos.items)) return null;
+        for (var i = 0; i < datos.items.length; i++) {
+          var it = datos.items[i];
+          if (it && it.dueno === dueno && it.repo === s && it.id === dueno + "/" + s) {
+            var nombre = typeof it.nombre === "string" && it.nombre.trim() ? it.nombre.trim().slice(0, 60) : s;
+            return [nombre, "/" + s + "/"];
+          }
+        }
+        return null;
+      }
+      var app = slug && Object.prototype.hasOwnProperty.call(APPS, slug) ? APPS[slug] : agregada(slug);
       if (!app) { location.replace("/"); return; }
       window.__APP__ = { name: app[0], url: app[1] };
       document.title = app[0] + " · Juegos y herramientas en el navegador";

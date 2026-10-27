@@ -123,6 +123,7 @@
 
   function iniciar() {
     refrescar();
+    document.addEventListener("portafolio:render", function () { refrescar(); });
     window.addEventListener("storage", function (e) {
       if (e.storageArea && e.storageArea !== window.localStorage) return;
       if (e.key === null) { refrescar(); return; }
