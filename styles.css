@@ -87,15 +87,27 @@ html[data-vista="widget"] footer,html[data-vista="compacta"] footer,html[data-vi
 html[data-vista="widget"] footer p,html[data-vista="compacta"] footer p,html[data-vista="media"] footer p{margin:0}
 html[data-vista="widget"] .hero,html[data-vista="widget"] main,html[data-vista="widget"] footer{padding-left:12px;padding-right:12px}
 html[data-vista="widget"] .fases{gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(96px,1fr)}
-html[data-vista="widget"] .card:not(.abierta){min-width:0;min-height:0;border-radius:16px;align-items:center;justify-content:center;text-align:center;padding:8px 10px 10px;cursor:pointer;touch-action:manipulation}
+html[data-vista="widget"] .fases[data-forma]{overflow:hidden;align-content:stretch}
+html[data-vista="widget"] .card:not(.abierta){min-width:0;min-height:0;border-radius:16px;align-items:center;justify-content:center;text-align:center;padding:6px 8px;overflow:hidden;cursor:pointer;touch-action:manipulation;container-type:size;container-name:ficha}
 .card:not(.abierta){cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .card:not(.abierta):hover,.card:not(.abierta):focus-visible{border-color:var(--accent2)}
 .card.en-pausa:not(.abierta):hover,.card.en-pausa:not(.abierta):focus-visible{border-color:#ffd7a1}
 .card:not(.abierta):focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--accent2)}
 html[data-vista="widget"] .card:not(.abierta) > .thumb,html[data-vista="widget"] .card:not(.abierta) > p,html[data-vista="widget"] .card:not(.abierta) > .proyecto,html[data-vista="widget"] .card:not(.abierta) > .dejar,html[data-vista="widget"] .card:not(.abierta) > .cerrar{display:none}
-html[data-vista="widget"] .card:not(.abierta):not(:has(h3 [aria-hidden="true"])) > .thumb{display:grid;width:46px;height:46px;flex:none;aspect-ratio:1;border-radius:14px;margin:0 0 6px;pointer-events:none}
-html[data-vista="widget"] .card:not(.abierta) h3{margin:0;max-width:100%;font-size:.8rem;font-weight:600;line-height:1.15;overflow:hidden}
-html[data-vista="widget"] .card:not(.abierta) h3 [aria-hidden="true"]{display:block;margin-bottom:6px;font-size:clamp(1.35rem,7dvh,1.85rem);font-weight:400;line-height:1}
+html[data-vista="widget"] .card:not(.abierta):not(:has(h3 [aria-hidden="true"])) > .thumb{display:grid;width:clamp(18px,min(40cqh,40cqw),52px);height:clamp(18px,min(40cqh,40cqw),52px);flex:none;aspect-ratio:1;border-radius:28%;margin:0 0 4px;pointer-events:none}
+html[data-vista="widget"] .card:not(.abierta) .thumb-letra{font-size:clamp(10px,min(22cqh,22cqw),1.7rem)}
+html[data-vista="widget"] .card:not(.abierta) h3{--e:clamp(16px,min(30cqh,28cqw),34px);flex:none;margin:0;max-width:100%;max-height:calc(var(--e) + 4px + 2.3em);font-size:clamp(.66rem,9cqw,.82rem);font-weight:600;line-height:1.15;overflow:hidden;overflow-wrap:anywhere}
+html[data-vista="widget"] .card:not(.abierta):not(:has(h3 [aria-hidden="true"])) h3{max-height:2.3em}
+html[data-vista="widget"] .card:not(.abierta) h3 [aria-hidden="true"]{display:block;margin-bottom:4px;font-size:var(--e);font-weight:400;line-height:1}
+html[data-vista="widget"] .fases:is([data-forma="icono"],[data-forma="punto"]) .card:not(.abierta){padding:0;border-radius:12px}
+html[data-vista="widget"] .fases:is([data-forma="icono"],[data-forma="punto"]) .card:not(.abierta) h3{--e:min(58cqh,58cqw);max-height:var(--e)}
+html[data-vista="widget"] .fases:is([data-forma="icono"],[data-forma="punto"]) .card:not(.abierta) h3 [aria-hidden="true"]{margin:0}
+html[data-vista="widget"] .fases:is([data-forma="icono"],[data-forma="punto"]) .card:not(.abierta):not(:has(h3 [aria-hidden="true"])) h3{max-height:0}
+html[data-vista="widget"] .fases:is([data-forma="icono"],[data-forma="punto"]) .card:not(.abierta):not(:has(h3 [aria-hidden="true"])) > .thumb{width:min(64cqh,64cqw);height:min(64cqh,64cqw);margin:0}
+html[data-vista="widget"] .fases:is([data-forma="icono"],[data-forma="punto"]) .card:not(.abierta) .thumb-letra{font-size:min(36cqh,36cqw)}
+html[data-vista="widget"] .fases[data-forma="punto"] .card:not(.abierta){border-radius:3px}
+html[data-vista="widget"] .fases[data-forma="punto"] .card:not(.abierta) h3{--e:min(78cqh,78cqw)}
+html[data-vista="widget"] .fases[data-forma="punto"] .card:not(.abierta):not(:has(h3 [aria-hidden="true"])) > .thumb{width:min(84cqh,84cqw);height:min(84cqh,84cqw);border-radius:2px}
 .hueco{visibility:hidden;pointer-events:none;min-width:0}
 .card.abierta{position:fixed;z-index:21;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:stretch;text-align:left;width:min(560px,calc(100vw - 40px));height:auto;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);margin:0;padding:0;border-radius:18px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.5);cursor:default;touch-action:manipulation}
 html[data-vista="widget"] .card.abierta{width:calc(100vw - 20px);max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
@@ -108,14 +120,15 @@ html[data-vista="widget"] .card.abierta{width:calc(100vw - 20px);max-height:calc
 .card.abierta .cerrar{position:absolute;top:8px;left:8px;z-index:2;height:32px;padding:0 12px;border:0;border-radius:999px;background:rgba(13,12,22,.72);color:#fff;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .card.abierta .cerrar:hover,.card.abierta .cerrar:focus-visible{background:rgba(13,12,22,.9)}
 .card.abierta .dejar{top:8px;right:8px;z-index:2}
-html[data-vista="compacta"] .fases{gap:8px;grid-template-columns:minmax(0,1fr);grid-auto-rows:minmax(52px,1fr)}
-html[data-vista="compacta"] .card:not(.abierta){min-width:0;min-height:0;flex-direction:row;align-items:center;gap:8px;padding:0 8px 0 0;overflow:hidden}
-html[data-vista="compacta"] .card:not(.abierta) .thumb{flex:none;width:auto;height:min(72%,52px);aspect-ratio:1;margin-left:8px;border-radius:10px;align-self:center}
-html[data-vista="compacta"] .card:not(.abierta) h3{flex:1 1 auto;min-width:0;margin:0;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-html[data-vista="compacta"] .card:not(.abierta) > p:not(.links),html[data-vista="compacta"] .card:not(.abierta) .proyecto,html[data-vista="compacta"] .card:not(.abierta) .code{display:none}
-html[data-vista="compacta"] .card:not(.abierta) .links{flex:none;margin:0;padding:0;gap:8px}
-html[data-vista="compacta"] .card:not(.abierta) .btn{padding:5px 10px;font-size:.78rem}
-html[data-vista="compacta"] .card:not(.abierta) .dejar{position:static;flex:none;width:28px;height:28px}
+html[data-vista="compacta"] .fases{gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));grid-auto-rows:minmax(64px,1fr)}
+html[data-vista="compacta"] .card:not(.abierta){min-width:0;min-height:0;justify-content:center;overflow:hidden;container-type:size;container-name:celda}
+html[data-vista="compacta"] .card:not(.abierta) .thumb{flex:1 1 0;width:100%;height:auto;min-height:0;aspect-ratio:auto}
+html[data-vista="compacta"] .card:not(.abierta) h3{flex:none;min-width:0;margin:8px 10px 0;font-size:.95rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-vista="compacta"] .card:not(.abierta) > p:not(.links),html[data-vista="compacta"] .card:not(.abierta) .proyecto{display:none}
+html[data-vista="compacta"] .card:not(.abierta) .links{flex:none;margin:6px 10px 10px;padding:0;gap:10px}
+html[data-vista="compacta"] .card:not(.abierta) .btn{padding:5px 12px;font-size:.8rem}
+html[data-vista="compacta"] .card:not(.abierta) .code{font-size:.8rem}
+html[data-vista="compacta"] .card:not(.abierta) .dejar{top:6px;right:6px;width:28px;height:28px}
 html[data-vista="media"] .fases{gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));grid-auto-rows:minmax(128px,1fr)}
 html[data-vista="media"] .card:not(.abierta){display:grid;grid-template-columns:minmax(0,34%) minmax(0,1fr);grid-template-rows:auto minmax(0,auto) minmax(0,1fr) auto;min-width:0;min-height:0;align-items:start;overflow:hidden;container-type:size;container-name:tarjeta}
 html[data-vista="media"] .card:not(.abierta) .thumb{grid-column:1;grid-row:1 / -1;width:100%;height:100%;min-height:0;aspect-ratio:auto}
@@ -128,9 +141,6 @@ html[data-vista="media"] .card:not(.abierta) .dejar{top:6px;left:6px;right:auto}
 html[data-vista="widget"] .hero > p:not(.hero-acciones),html[data-vista="compacta"] .hero > p:not(.hero-acciones),html[data-vista="media"] .hero > p:not(.hero-acciones){display:none}
 html[data-vista="widget"] .hero,html[data-vista="compacta"] .hero,html[data-vista="media"] .hero{padding-top:8px;padding-bottom:4px}
 html[data-vista="media"] .card:not(.abierta) > p:not(.links){-webkit-line-clamp:1}
-html[data-vista="compacta"] .fases{grid-template-columns:repeat(2,minmax(0,1fr))}
-html[data-vista="compacta"] .card:not(.abierta) .btn{padding:3px 8px;font-size:.72rem}
-html[data-vista="compacta"] .card:not(.abierta) .dejar{width:22px;height:22px}
 }
 @media (max-height:740px){
 html[data-vista="media"] .hero > p:not(.hero-acciones){display:none}
@@ -142,4 +152,19 @@ p:not(.links){display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertic
 p:not(.links){display:none}
 .btn{padding:5px 10px;font-size:.78rem}
 .links{margin:4px 10px 8px}
+}
+@container celda (min-height:230px){
+html[data-vista="compacta"] .card:not(.abierta) > p:not(.links){display:-webkit-box;flex:none;min-height:0;margin:4px 10px 0;font-size:.8rem;line-height:1.3;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+}
+@container celda (min-height:290px){
+html[data-vista="compacta"] .card:not(.abierta) > p:not(.links){-webkit-line-clamp:3}
+}
+@container celda (max-height:149.98px){
+html[data-vista="compacta"] .card:not(.abierta) .thumb{position:absolute;top:0;bottom:0;left:8px;width:min(calc(100cqh - 16px),38cqw);height:min(calc(100cqh - 16px),38cqw);margin:auto 0;border-radius:10px}
+html[data-vista="compacta"] .card:not(.abierta) h3,html[data-vista="compacta"] .card:not(.abierta) .links{margin-left:calc(min(calc(100cqh - 16px),38cqw) + 16px)}
+html[data-vista="compacta"] .card:not(.abierta) .thumb-letra{font-size:calc(min(calc(100cqh - 16px),38cqw) * .55)}
+html[data-vista="compacta"] .card:not(.abierta) h3{margin-top:0;margin-right:10px}
+html[data-vista="compacta"] .card:not(.abierta) .links{margin-top:6px;margin-bottom:0}
+html[data-vista="compacta"] .card:not(.abierta) .code{display:none}
+html[data-vista="compacta"] .card:not(.abierta) .dejar{top:4px;left:4px;right:auto;width:22px;height:22px;font-size:.75rem}
 }
