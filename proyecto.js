@@ -6,6 +6,18 @@
   var MAX_OBJETIVO = 140;
   var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
   var PREFIX = "meta.v1.";
+  var SEMILLAS = {
+    "piano-transcribe": {
+      v: 1,
+      slug: "piano-transcribe",
+      proyecto: {
+        fase: 4,
+        fase_estado: 2,
+        fases_completadas: 3,
+        objetivo: "Motor de notas open source para mis apps y app web pública de transcripción de piano en vivo."
+      }
+    }
+  };
 
   function entero(n, lo, hi) {
     return typeof n === "number" && isFinite(n) && Math.floor(n) === n && n >= lo && n <= hi;
@@ -139,11 +151,22 @@
     return out;
   }
 
+  function sinRegistro(slug) {
+    try { return window.localStorage.getItem(PREFIX + slug) === null; } catch (e) { return true; }
+  }
+
+  function leerInfo(slug) {
+    var info = leerProyecto(leerRegistro(slug), slug);
+    if (info || !sinRegistro(slug)) return info;
+    if (!Object.prototype.hasOwnProperty.call(SEMILLAS, slug)) return null;
+    return leerProyecto(SEMILLAS[slug], slug);
+  }
+
   function refrescar(slug) {
     var cards = tarjetas(slug);
     for (var i = 0; i < cards.length; i++) {
       var s = cards[i].getAttribute("data-app");
-      try { pintar(cards[i], leerProyecto(leerRegistro(s), s)); } catch (e) { }
+      try { pintar(cards[i], leerInfo(s)); } catch (e) { }
     }
   }
 
