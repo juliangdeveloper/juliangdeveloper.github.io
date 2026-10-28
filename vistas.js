@@ -3,6 +3,59 @@
 
   var vista = "";
   var velo = null;
+  var pedido = 0;
+
+  function pedirIgualar() {
+    if (pedido) return;
+    pedido = requestAnimationFrame(function () {
+      pedido = 0;
+      igualar();
+    });
+  }
+
+  function casillas(sec) {
+    var grid = sec.querySelector(".grid");
+    if (!grid) return 0;
+    var n = 0;
+    for (var i = 0; i < grid.children.length; i++) {
+      var ch = grid.children[i];
+      if (ch.classList.contains("card") || ch.classList.contains("hueco")) n++;
+    }
+    return n;
+  }
+
+  function llevaTitulo(sec) {
+    var h = sec.querySelector(":scope > h2");
+    if (!h) return false;
+    var s = getComputedStyle(h);
+    return s.display !== "none" && s.position !== "absolute";
+  }
+
+  function igualar() {
+    var fases = document.querySelector(".fases");
+    if (!fases) return;
+    var id = document.documentElement.getAttribute("data-vista");
+    if (!id || id === "completa") {
+      fases.style.removeProperty("grid-template-rows");
+      return;
+    }
+    var crudas = getComputedStyle(fases).gridTemplateColumns;
+    var cols = crudas && crudas !== "none" ? crudas.split(" ").filter(Boolean).length : 1;
+    if (!cols) cols = 1;
+    var partes = [];
+    var secs = fases.querySelectorAll(":scope > .fase");
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].hidden) continue;
+      var n = casillas(secs[i]);
+      if (!n) continue;
+      if (llevaTitulo(secs[i])) partes.push("auto");
+      var filas = Math.ceil(n / cols);
+      var piso = id === "widget" ? "96px" : id === "compacta" ? "52px" : "128px";
+      for (var r = 0; r < filas; r++) partes.push("minmax(" + piso + ",1fr)");
+    }
+    if (partes.length) fases.style.gridTemplateRows = partes.join(" ");
+    else fases.style.removeProperty("grid-template-rows");
+  }
 
   function limites() {
     var partes = (document.documentElement.getAttribute("data-rangos") || "519 899 1199").split(/\s+/);
@@ -190,6 +243,7 @@
     vista = id;
     document.documentElement.setAttribute("data-vista", id);
     sincronizar();
+    pedirIgualar();
   }
 
   function iniciar() {
@@ -208,6 +262,7 @@
       if (velo) velo.hidden = true;
       liberarFondo();
       sincronizar();
+      pedirIgualar();
     });
     aplicar(vistaDe());
     var n = limites();
@@ -216,6 +271,12 @@
         aplicar(vistaDe());
       });
     }
+    var fases = document.querySelector(".fases");
+    if (fases && typeof MutationObserver === "function") {
+      new MutationObserver(pedirIgualar).observe(fases, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
+    }
+    window.addEventListener("resize", pedirIgualar);
+    window.matchMedia("(max-height: 520px)").addEventListener("change", pedirIgualar);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);

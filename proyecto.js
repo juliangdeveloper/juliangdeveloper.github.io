@@ -1,7 +1,7 @@
 (function () {
   "use strict";
   var FASES = ["Idea", "Definición", "Diseño", "Construcción", "Validación", "Lanzamiento"];
-  var ESTADOS = ["Pendiente", "En curso", "Bloqueada", "En revisión", "Completada"];
+  var ESTADOS = ["Pendiente", "En curso", "En pausa", "En revisión", "Completada"];
   var TOTAL = 6;
   var MAX_OBJETIVO = 140;
   var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -83,10 +83,41 @@
     return info ? [info.fase, info.estado, info.completadas, info.objetivo].join("|") : "";
   }
 
+  function marcarPausa(card, info) {
+    card.classList.toggle("en-pausa", !!(info && info.fase !== 7 && info.estado === 2));
+  }
+
+  function ubicar(card, info) {
+    if (card.classList.contains("abierta")) return;
+    var fase = info && info.fase >= 1 && info.fase <= 7 ? String(info.fase) : "0";
+    var grid = document.querySelector('.fase[data-fase="' + fase + '"] .grid');
+    if (grid && card.parentNode !== grid) grid.appendChild(card);
+  }
+
+  function ocupada(sec) {
+    var grid = sec.querySelector(".grid");
+    if (!grid) return false;
+    for (var i = 0; i < grid.children.length; i++) {
+      var ch = grid.children[i];
+      if (ch.classList.contains("card") || ch.classList.contains("hueco")) return true;
+    }
+    return false;
+  }
+
+  function mostrarFases() {
+    var secs = document.querySelectorAll("main .fase");
+    for (var i = 0; i < secs.length; i++) secs[i].hidden = !ocupada(secs[i]);
+  }
+
   function pintar(card, info) {
+    marcarPausa(card, info);
+    ubicar(card, info);
     var actual = card.querySelector(":scope > .proyecto");
     var nueva = firma(info);
-    if ((card.getAttribute("data-proyecto") || "") === nueva && (!!actual === !!info)) return;
+    if ((card.getAttribute("data-proyecto") || "") === nueva && (!!actual === !!info)) {
+      mostrarFases();
+      return;
+    }
     if (actual) actual.remove();
     if (info) {
       var links = card.querySelector(":scope > .links");
@@ -95,6 +126,7 @@
     } else {
       card.removeAttribute("data-proyecto");
     }
+    mostrarFases();
   }
 
   function tarjetas(slug) {

@@ -3,7 +3,6 @@
   var CLAVE = "portafolio.v1.proyectos";
   var VERSION_DATOS = 1;
   var LIMITES = Object.freeze({ PROYECTOS: 60, NOMBRE: 60, DESCRIPCION: 180, URL: 2048, HTML: 2000000, ESPERA_MS: 10000, DESHACER_MS: 6000 });
-  var GRUPO_AGREGADOS = "agregados";
   var TEXTOS = Object.freeze({
     AGREGAR: "＋ Agregar proyecto",
     TITULO_HOJA: "Agregar proyecto",
@@ -12,7 +11,6 @@
     CANCELAR: "Cancelar",
     CONFIRMAR: "Agregar",
     CARGANDO: "Cargando…",
-    SECCION: "📌 Agregados",
     ABRIR: "▶ Abrir",
     CODIGO: "Código",
     DEJAR: "Dejar de seguir",
@@ -66,7 +64,6 @@
       out.push(Object.freeze({
         id: (m[1] + "/" + m[2]).toLowerCase(),
         dueno: m[1].toLowerCase(),
-        grupo: h2.id,
         nodo: card.cloneNode(true)
       }));
     }
@@ -179,9 +176,17 @@
     return lista;
   }
 
-  function esDefault(lista) {
-    if (lista.length !== DEFAULTS.length) return false;
-    for (var i = 0; i < lista.length; i++) if (lista[i].id !== DEFAULTS[i].id) return false;
+  function manualesDe(lista) {
+    return lista.filter(function (i) { return !POR_ID[i.id]; });
+  }
+
+  function listaRestaurada(lista) {
+    return listaDefaults().concat(manualesDe(lista).map(function (i) { return Object.assign({}, i); }));
+  }
+
+  function mismaLista(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) if (a[i].id !== b[i].id) return false;
     return true;
   }
 
@@ -249,31 +254,15 @@
   }
 
   var grids = {};
-  var secciones = {};
   var ui = {};
   var deshacer = null;
   var temporizador = 0;
 
   function prepararSecciones() {
-    DEFAULTS.forEach(function (d) {
-      if (grids[d.grupo]) return;
-      var h2 = document.getElementById(d.grupo);
-      var sec = h2.closest("section");
-      secciones[d.grupo] = sec;
-      grids[d.grupo] = sec.querySelector(".grid");
-    });
-    var ultima = secciones[DEFAULTS[DEFAULTS.length - 1].grupo];
-    var sec = el("section");
-    sec.setAttribute("aria-labelledby", GRUPO_AGREGADOS);
-    var h2 = el("h2", "", TEXTOS.SECCION);
-    h2.id = GRUPO_AGREGADOS;
-    var ul = el("ul", "grid");
-    sec.appendChild(h2);
-    sec.appendChild(ul);
-    sec.hidden = true;
-    ultima.after(sec);
-    secciones[GRUPO_AGREGADOS] = sec;
-    grids[GRUPO_AGREGADOS] = ul;
+    var secs = document.querySelectorAll("main .fase");
+    for (var i = 0; i < secs.length; i++) {
+      grids[secs[i].getAttribute("data-fase")] = secs[i].querySelector(".grid");
+    }
   }
 
   function botonDejar(li, item) {
@@ -287,16 +276,18 @@
 
   function pintar() {
     var lista = cargar();
+    var fijos = Array.prototype.slice.call(document.querySelectorAll("li.card[data-fijo]"));
     Object.keys(grids).forEach(function (g) { grids[g].replaceChildren(); });
+    var base = grids["0"];
     lista.forEach(function (item) {
       var d = POR_ID[item.id];
       var li = d ? d.nodo.cloneNode(true) : tarjetaAgregada(item);
       li.setAttribute("data-id", item.id);
       botonDejar(li, item);
-      grids[d ? d.grupo : GRUPO_AGREGADOS].appendChild(li);
+      base.appendChild(li);
     });
-    Object.keys(secciones).forEach(function (g) { secciones[g].hidden = !grids[g].children.length; });
-    ui.restaurar.hidden = esDefault(lista);
+    fijos.forEach(function (li) { base.appendChild(li); });
+    ui.restaurar.hidden = mismaLista(lista, listaRestaurada(lista));
     document.dispatchEvent(new CustomEvent("portafolio:render"));
   }
 
@@ -326,7 +317,7 @@
 
   function restaurar() {
     var anterior = copia(cargar());
-    guardar(listaDefaults());
+    guardar(listaRestaurada(anterior));
     pintar();
     avisar(TEXTOS.OK_RESTAURADO, anterior);
   }
@@ -411,7 +402,7 @@
       ui.hoja.close();
       pintar();
       avisar(texto(TEXTOS.OK_AGREGADO, { nombre: item.nombre }), anterior);
-      var nueva = grids[GRUPO_AGREGADOS].querySelector('[data-id="' + CSS.escape(item.id) + '"]');
+      var nueva = document.querySelector('[data-id="' + CSS.escape(item.id) + '"]');
       if (nueva) nueva.scrollIntoView({ block: "center", behavior: "smooth" });
     }).catch(function (err) {
       ocupado(false);
