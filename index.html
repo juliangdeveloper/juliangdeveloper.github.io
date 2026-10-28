@@ -1,8 +1,20 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-rangos="519 899 1199">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function () {
+      var partes = (document.documentElement.getAttribute("data-rangos") || "519 899 1199").split(/\s+/);
+      var n = [];
+      for (var i = 0; i < partes.length; i++) n.push(Number(partes[i]));
+      var v = "completa";
+      if (matchMedia("(max-width: " + n[0] + "px)").matches) v = "widget";
+      else if (matchMedia("(max-width: " + n[1] + "px)").matches) v = "compacta";
+      else if (matchMedia("(max-width: " + n[2] + "px)").matches) v = "media";
+      document.documentElement.setAttribute("data-vista", v);
+    })();
+  </script>
   <title>Juegos y herramientas gratis en el navegador</title>
   <meta name="description" content="Juegos y herramientas gratis en el navegador: aprende piano jugando, puzzles para jugar con amigos, un café de gatos cozy y rutas de barrido. Sin instalar.">
   <link rel="canonical" href="https://juliangdeveloper.github.io/">
@@ -25,9 +37,10 @@
   <meta name="twitter:title" content="Juegos y herramientas gratis en el navegador">
   <meta name="twitter:description" content="Juegos y herramientas gratis en el navegador: aprende piano jugando, puzzles para jugar con amigos, un café de gatos cozy y rutas de barrido. Sin instalar.">
   <meta name="twitter:image" content="https://juliangdeveloper.github.io/og.jpg">
-  <link rel="stylesheet" href="styles.css?v=3">
-  <script src="portafolio.js?v=3" defer></script>
-  <script src="proyecto.js?v=3" defer></script>
+  <link rel="stylesheet" href="styles.css?v=4">
+  <script src="portafolio.js?v=4" defer></script>
+  <script src="proyecto.js?v=4" defer></script>
+  <script src="vistas.js?v=4" defer></script>
   <script>if (window.top !== window.self) window.top.location.replace(location.href);</script>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "ItemList", "name": "Juegos y herramientas en el navegador", "itemListElement": [{"@type": "ListItem", "position": 1, "url": "https://juliangdeveloper.github.io/piano-magic/", "name": "piano-magic"}, {"@type": "ListItem", "position": 2, "url": "https://juliangdeveloper.github.io/cozy-cat-cafe/", "name": "Cozy Cat Café"}, {"@type": "ListItem", "position": 3, "url": "https://juliangdeveloper.github.io/sweep-route/", "name": "Sweep Route"}, {"@type": "ListItem", "position": 4, "url": "https://juliangdeveloper.github.io/piano-transcribe/", "name": "piano-transcribe"}, {"@type": "ListItem", "position": 5, "url": "https://juliangdeveloper.github.io/planes-swipe/", "name": "planes-swipe"}, {"@type": "ListItem", "position": 6, "url": "https://juliangdeveloper.github.io/food-log/", "name": "food-log"}, {"@type": "ListItem", "position": 7, "url": "https://juliangdeveloper.github.io/floodit-party/", "name": "Flood-It Party"}, {"@type": "ListItem", "position": 8, "url": "https://juliangdeveloper.github.io/clickomania-party/", "name": "Clickomania Party"}, {"@type": "ListItem", "position": 9, "url": "https://juliangdeveloper.github.io/hexasort-party-v2/", "name": "HexaSort Party"}, {"@type": "ListItem", "position": 10, "url": "https://juliangdeveloper.github.io/vidabalance-v2/", "name": "VidaBalance"}]}</script>
 </head>
