@@ -4,6 +4,8 @@
   var vista = "";
   var velo = null;
   var pedido = 0;
+  var abiertaEn = 0;
+  var GRACIA_MS = 450;
 
   function pedirIgualar() {
     if (pedido) return;
@@ -116,33 +118,21 @@
 
   function preparar(card) {
     if (card.classList.contains("abierta")) return;
-    card.setAttribute("role", "button");
     card.tabIndex = 0;
-    card.setAttribute("aria-expanded", "false");
+    if (vista === "widget") {
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-expanded", "false");
+    } else {
+      card.removeAttribute("role");
+      card.removeAttribute("aria-expanded");
+    }
     asegurarCerrar(card);
   }
 
-  function limpiar(card) {
-    card.removeAttribute("role");
-    card.removeAttribute("tabindex");
-    card.removeAttribute("aria-expanded");
-    card.removeAttribute("aria-modal");
-    card.removeAttribute("aria-labelledby");
-    card.classList.remove("abierta");
-    var cerrar = card.querySelector(":scope > .cerrar");
-    if (cerrar) cerrar.remove();
-    if (card._hueco && card._hueco.parentNode) card._hueco.remove();
-    card._hueco = null;
-  }
-
   function sincronizar() {
-    var widget = vista === "widget";
     var cards = document.querySelectorAll("li.card");
-    for (var i = 0; i < cards.length; i++) {
-      if (widget) preparar(cards[i]);
-      else limpiar(cards[i]);
-    }
-    if (!widget || !document.querySelector(".card.abierta")) {
+    for (var i = 0; i < cards.length; i++) preparar(cards[i]);
+    if (!document.querySelector(".card.abierta")) {
       if (velo) velo.hidden = true;
       liberarFondo();
     }
@@ -161,9 +151,7 @@
     var card = document.querySelector(".card.abierta");
     if (!card) return;
     card.classList.remove("abierta");
-    card.setAttribute("role", "button");
-    card.tabIndex = 0;
-    card.setAttribute("aria-expanded", "false");
+    card.removeAttribute("role");
     card.removeAttribute("aria-modal");
     card.removeAttribute("aria-labelledby");
     var cerrar = card.querySelector(":scope > .cerrar");
@@ -175,6 +163,7 @@
     card._hueco = null;
     if (velo) velo.hidden = true;
     liberarFondo();
+    preparar(card);
     card.focus();
   }
 
@@ -184,9 +173,11 @@
     var hueco = document.createElement("li");
     hueco.className = "hueco";
     hueco.setAttribute("aria-hidden", "true");
+    if (vista === "completa") hueco.style.minHeight = card.getBoundingClientRect().height + "px";
     card.after(hueco);
     card._hueco = hueco;
     document.body.appendChild(card);
+    abiertaEn = Date.now();
     card.classList.add("abierta");
     card.setAttribute("role", "dialog");
     card.setAttribute("aria-modal", "true");
@@ -200,17 +191,26 @@
     if (cerrar) cerrar.focus();
   }
 
+  function alClickPrevio(e) {
+    if (!abiertaEn || Date.now() - abiertaEn > GRACIA_MS) return;
+    if (!e.target.closest(".card.abierta, .velo")) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   function alClick(e) {
-    if (vista !== "widget") return;
-    if (e.target.closest(".dejar, .aviso, .hoja, .agregar, .restaurar, .velo, .cerrar")) return;
+    if (e.defaultPrevented || e.button) return;
+    if (e.target.closest(".dejar, .aviso, .hoja, .agregar, .restaurar, .velo, .cerrar, .links a")) return;
     var card = e.target.closest(".card");
     if (!card || card.classList.contains("abierta")) return;
+    if (e.target.closest("a[href]") && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return;
+    var sel = window.getSelection ? window.getSelection() : null;
+    if (sel && !sel.isCollapsed && card.contains(sel.anchorNode)) return;
     e.preventDefault();
     abrir(card);
   }
 
   function alTecla(e) {
-    if (vista !== "widget") return;
     var abierta = document.querySelector(".card.abierta");
     if (e.key === "Escape") {
       if (!abierta) return;
@@ -239,7 +239,7 @@
 
   function aplicar(id) {
     if (id === vista) return;
-    if (vista === "widget") cerrarAbierta();
+    cerrarAbierta();
     vista = id;
     document.documentElement.setAttribute("data-vista", id);
     sincronizar();
@@ -254,6 +254,7 @@
     velo.setAttribute("aria-label", "Cerrar");
     velo.addEventListener("click", cerrarAbierta);
     document.body.appendChild(velo);
+    document.addEventListener("click", alClickPrevio, true);
     document.addEventListener("click", alClick);
     document.addEventListener("keydown", alTecla);
     document.addEventListener("portafolio:render", function () {
