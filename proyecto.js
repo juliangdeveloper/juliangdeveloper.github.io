@@ -16,6 +16,16 @@
         fases_completadas: 5,
         objetivo: "Motor open source de captura y escritura musical, mantenido por la comunidad"
       }
+    },
+    "diff-review": {
+      v: 1,
+      slug: "diff-review",
+      proyecto: {
+        fase: 4,
+        fase_estado: 1,
+        fases_completadas: 3,
+        objetivo: "Open source para revisar diffs de commits en el celular y aprobar, rechazar o comentar."
+      }
     }
   };
 
