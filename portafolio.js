@@ -2,6 +2,7 @@
   "use strict";
   var CLAVE = "portafolio.v1.proyectos";
   var VERSION_DATOS = 1;
+  var SEMILLA_INICIAL = 1;
   var LIMITES = Object.freeze({ PROYECTOS: 60, NOMBRE: 60, DESCRIPCION: 180, URL: 2048, HTML: 2000000, ESPERA_MS: 10000, DESHACER_MS: 6000 });
   var TEXTOS = Object.freeze({
     AGREGAR: "＋ Agregar proyecto",
@@ -64,6 +65,7 @@
       out.push(Object.freeze({
         id: (m[1] + "/" + m[2]).toLowerCase(),
         dueno: m[1].toLowerCase(),
+        semilla: Math.max(SEMILLA_INICIAL, parseInt(card.getAttribute("data-semilla"), 10) || SEMILLA_INICIAL),
         nodo: card.cloneNode(true)
       }));
     }
@@ -76,6 +78,7 @@
   var MISMO_ORIGEN = location.hostname.toLowerCase() === DUENO_SITIO + ".github.io";
   var POR_ID = {};
   DEFAULTS.forEach(function (d) { POR_ID[d.id] = d; });
+  var SEMILLA = DEFAULTS.reduce(function (n, d) { return Math.max(n, d.semilla); }, SEMILLA_INICIAL);
 
   function listaDefaults() {
     return DEFAULTS.map(function (d) { return { id: d.id }; });
@@ -153,7 +156,7 @@
 
   function guardar(lista) {
     memoria = lista;
-    try { window.localStorage.setItem(CLAVE, JSON.stringify({ v: VERSION_DATOS, items: lista })); } catch (e) { }
+    try { window.localStorage.setItem(CLAVE, JSON.stringify({ v: VERSION_DATOS, semilla: SEMILLA, items: lista })); } catch (e) { }
   }
 
   function cargar() {
@@ -171,9 +174,31 @@
     if (!lista) {
       lista = listaDefaults();
       guardar(lista);
+      return lista;
+    }
+    var vista = typeof datos.semilla === "number" && isFinite(datos.semilla) ? datos.semilla : SEMILLA_INICIAL;
+    if (vista < SEMILLA) {
+      lista = conNuevos(lista, vista);
+      guardar(lista);
+      return lista;
     }
     memoria = lista;
     return lista;
+  }
+
+  function conNuevos(lista, vista) {
+    var out = lista.slice();
+    DEFAULTS.forEach(function (d, i) {
+      if (d.semilla <= vista || out.some(function (it) { return it.id === d.id; })) return;
+      if (out.length >= LIMITES.PROYECTOS) return;
+      var pos = 0;
+      for (var j = i - 1; j >= 0; j--) {
+        var k = out.findIndex(function (it) { return it.id === DEFAULTS[j].id; });
+        if (k >= 0) { pos = k + 1; break; }
+      }
+      out.splice(pos, 0, { id: d.id });
+    });
+    return out;
   }
 
   function manualesDe(lista) {
