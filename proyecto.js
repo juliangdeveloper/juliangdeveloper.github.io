@@ -11,10 +11,10 @@
       v: 1,
       slug: "piano-transcribe",
       proyecto: {
-        fase: 4,
-        fase_estado: 2,
-        fases_completadas: 3,
-        objetivo: "Motor de notas open source para mis apps y app web pública de transcripción de piano en vivo."
+        fase: 6,
+        fase_estado: 1,
+        fases_completadas: 5,
+        objetivo: "Motor open source de captura y escritura musical, mantenido por la comunidad"
       }
     }
   };
