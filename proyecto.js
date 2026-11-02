@@ -26,6 +26,16 @@
         fases_completadas: 3,
         objetivo: "Open source para revisar diffs de commits en el celular y aprobar, rechazar o comentar."
       }
+    },
+    "pose-engine": {
+      v: 1,
+      slug: "pose-engine",
+      proyecto: {
+        fase: 4,
+        fase_estado: 1,
+        fases_completadas: 3,
+        objetivo: "Motor open source de estimación de pose en tiempo real, en el dispositivo, para juegos y apps de ejercicio."
+      }
     }
   };
 
