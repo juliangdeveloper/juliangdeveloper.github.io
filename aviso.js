@@ -83,7 +83,7 @@
       "- proyecto.aportes: lista de { stat, exp, fuente }. stat es el nombre visible de una habilidad clara y medible (hasta " + CFG.STAT_NOMBRE_MAX + " caracteres); escríbelo igual en todas las apps que la comparten, porque el portafolio suma la EXP de los nombres idénticos. exp es un entero de " + CFG.EXP_MIN + " a " + CFG.EXP_MAX + ". fuente es \"" + M.FUENTES[0] + "\" (lo que se ejercitó al crear la app) o \"" + M.FUENTES[1] + "\" (lo que ejercita quien la usa).",
       "",
       "Reglas:",
-      "- Escribe la clave en el mismo origen (" + location.origin + "), al cargar la app y también en modo demo o sin conexión.",
+      "- Escribe la clave en el mismo origen (" + location.origin + "), en cada carga de la app, también sin conexión.",
       "- Usa valores reales de esta app; no copies los del ejemplo.",
       "- Sube la versión de la app y actualiza el README en el mismo cambio.",
       "- Sin comentarios en el código."
