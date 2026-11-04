@@ -41,7 +41,6 @@
   var tituloPila = null;
   var listaPila = null;
   var dialogoTrono = null;
-  var detalleTrono = null;
   var dialogoNiveles = null;
   var tituloNiveles = null;
   var listaNiveles = null;
@@ -612,7 +611,7 @@
   }
 
   function temaDe(fase) {
-    return CFG.TEMAS[fase] || CFG.TEMAS["0"] || CFG.DEFECTO;
+    return CFG.TEMAS[fase] || CFG.DEFECTO;
   }
 
   function nivelDe(n) {
@@ -661,7 +660,7 @@
     var comp = parseInt(meta[2], 10);
     if (!(estado >= 0 && estado <= 4)) estado = 0;
     if (!(comp >= 0 && comp <= 6)) comp = 0;
-    var extra = extrasMeta(slug);
+    var extra = (window.PORTAFOLIO_META && window.PORTAFOLIO_META.leer(slug)) || { bloqueada: false, aportes: [] };
     return {
       id: id,
       slug: slug,
@@ -677,59 +676,6 @@
     };
   }
 
-  function entero(n, lo, hi) {
-    return typeof n === "number" && isFinite(n) && Math.floor(n) === n && n >= lo && n <= hi;
-  }
-
-  function metaCruda(slug) {
-    if (!slug || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(slug)) return null;
-    var raw = null;
-    try { raw = window.localStorage.getItem(CFG.CLAVE_META + slug); } catch (e) { return null; }
-    if (typeof raw !== "string" || !raw || raw.length > 200000) return null;
-    try { return JSON.parse(raw); } catch (e) { return null; }
-  }
-
-  function idStat(s) {
-    if (typeof s !== "string") return "";
-    var t = s.trim().toLowerCase();
-    if (t.length < 1 || t.length > CFG.STAT_ID_MAX) return "";
-    if (!/^[a-z0-9][a-z0-9_-]*$/.test(t)) return "";
-    return t;
-  }
-
-  function fuenteDe(s) {
-    return s === "creacion" || s === "uso" ? s : "";
-  }
-
-  function aportesDe(lista) {
-    if (!Array.isArray(lista)) return [];
-    var mapa = {};
-    var orden = [];
-    for (var j = 0; j < lista.length; j++) {
-      var it = lista[j];
-      if (!it || typeof it !== "object") continue;
-      var id = idStat(it.id);
-      if (!id || !entero(it.aporte, 1, CFG.APORTE_MAX)) continue;
-      var fuente = fuenteDe(it.fuente);
-      var clave = id + "|" + fuente;
-      if (!mapa[clave]) {
-        mapa[clave] = { id: id, aporte: 0, fuente: fuente };
-        orden.push(clave);
-      }
-      mapa[clave].aporte += it.aporte;
-    }
-    var out = [];
-    for (var i = 0; i < orden.length; i++) out.push(mapa[orden[i]]);
-    return out;
-  }
-
-  function extrasMeta(slug) {
-    var rec = metaCruda(slug);
-    var p = rec && rec.v === 1 && rec.slug === slug && rec.proyecto && typeof rec.proyecto === "object" && !Array.isArray(rec.proyecto) ? rec.proyecto : null;
-    if (!p) return { bloqueada: false, aportes: [] };
-    return { bloqueada: p.bloqueada === true, aportes: aportesDe(p.aportes) };
-  }
-
   function leerSalas() {
     var secs = document.querySelectorAll("main .fases > .fase");
     var salas = [];
@@ -743,7 +689,7 @@
       var apps = [];
       for (var j = 0; j < cards.length; j++) apps.push(leerApp(cards[j]));
       salas.push({
-        fase: sec.getAttribute("data-fase") || "0",
+        fase: sec.getAttribute("data-fase") || String(CFG.META.FASE_DEFECTO),
         nombre: h2 ? h2.textContent.replace(/\s+/g, " ").trim() : "",
         apps: apps
       });
@@ -786,7 +732,7 @@
     var copias = [];
     for (var i = 0; i < salas.length; i++) {
       copias.push({
-        fase: salas[i].fase || "0",
+        fase: salas[i].fase || String(CFG.META.FASE_DEFECTO),
         nombre: salas[i].nombre,
         apps: salas[i].apps,
         slots: slotsVisibles(salas[i], nivel.cupo)
@@ -1541,6 +1487,8 @@
     html.removeAttribute("data-nivel");
     html.style.removeProperty("--maz-fondo");
     html.style.removeProperty("--maz-fuego");
+    html.style.removeProperty("--maz-marco");
+    html.style.removeProperty("--maz-marco-corte");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta && temaOriginal) meta.setAttribute("content", temaOriginal);
   }
@@ -1554,7 +1502,7 @@
       for (var j = 0; j < salas[i].apps.length; j++) {
         var app = salas[i].apps[j];
         var ap = [];
-        for (var k = 0; k < (app.aportes || []).length; k++) ap.push(app.aportes[k].id + ":" + app.aportes[k].fuente + ":" + app.aportes[k].aporte);
+        for (var k = 0; k < (app.aportes || []).length; k++) ap.push(app.aportes[k].stat + ":" + app.aportes[k].fuente + ":" + app.aportes[k].exp);
         ids.push([app.id, app.href, app.nombre, app.estado, app.completadas, app.bloqueada ? "b" : "", ap.join("+"), app.emoji, app.boton, app.descripcion].join("@"));
       }
       partes.push(salas[i].fase + ":" + ids.join(","));
@@ -1569,6 +1517,7 @@
     aplicarNivel(nivel);
     if (placaTexto) placaTexto.textContent = CFG.TEXTOS.MAZMORRA + " · " + nivel.nombre;
     if (atlasEstado === "cargando") return;
+    aplicarMarco(nivel);
     var ancho = (lienzoEl && lienzoEl.clientWidth) || window.innerWidth;
     var firma = firmaDe(salas, nivel, ancho);
     if (!forzar && firma === firmaActual) return;
@@ -1748,93 +1697,143 @@
     return acciones;
   }
 
-  function catalogoStats() {
-    return Array.isArray(CFG.STATS) ? CFG.STATS : [];
-  }
-
-  function nombreStat(id) {
-    var lista = catalogoStats();
-    var i;
-    for (i = 0; i < lista.length; i++) {
-      if (lista[i] && lista[i].id === id && lista[i].nombre) return lista[i].nombre;
-    }
-    var partes = String(id || "").split(/[_-]+/);
-    for (i = 0; i < partes.length; i++) {
-      if (!partes[i]) continue;
-      partes[i] = partes[i].charAt(0).toUpperCase() + partes[i].slice(1);
-    }
-    return partes.join(" ");
-  }
-
-  function nivelBase(id) {
-    var lista = catalogoStats();
-    for (var i = 0; i < lista.length; i++) {
-      if (!lista[i] || lista[i].id !== id) continue;
-      return entero(lista[i].nivel, 0, CFG.NIVEL_MAX) ? lista[i].nivel : 0;
-    }
-    return 0;
-  }
-
-  function tieneNivel(id) {
-    var lista = catalogoStats();
-    for (var i = 0; i < lista.length; i++) {
-      if (lista[i] && lista[i].id === id && entero(lista[i].nivel, 0, CFG.NIVEL_MAX)) return true;
-    }
-    return false;
-  }
-
-  function statsVisibles(salas) {
-    var reportados = {};
-    var i, j, k, lista;
-    for (i = 0; i < salas.length; i++) {
-      for (j = 0; j < salas[i].apps.length; j++) {
-        lista = salas[i].apps[j].aportes || [];
-        for (k = 0; k < lista.length; k++) if (lista[k] && lista[k].id) reportados[lista[k].id] = true;
-      }
-    }
-    var conocidos = {};
-    var catalogo = catalogoStats();
-    var out = [];
-    for (i = 0; i < catalogo.length; i++) {
-      if (!catalogo[i] || !catalogo[i].id) continue;
-      var id = catalogo[i].id;
-      conocidos[id] = true;
-      if (!tieneNivel(id) && !reportados[id]) continue;
-      out.push({ id: id, nombre: catalogo[i].nombre || nombreStat(id), nivel: nivelBase(id) });
-    }
-    var extra = Object.keys(reportados).filter(function (sid) { return !conocidos[sid]; }).sort();
-    for (i = 0; i < extra.length; i++) out.push({ id: extra[i], nombre: nombreStat(extra[i]), nivel: nivelBase(extra[i]) });
-    return out;
-  }
-
-  function aportesVisibles(statId) {
-    var salas = leerSalas();
-    var out = [];
+  function statsDe(salas) {
+    var mapa = {};
+    var orden = [];
     var visto = {};
-    var i, j, k, app;
-    for (i = 0; i < salas.length; i++) {
-      for (j = 0; j < salas[i].apps.length; j++) {
-        app = salas[i].apps[j];
+    for (var i = 0; i < salas.length; i++) {
+      for (var j = 0; j < salas[i].apps.length; j++) {
+        var app = salas[i].apps[j];
         var clave = app.slug || app.id;
         if (visto[clave]) continue;
-        var lista = app.aportes || [];
-        var creacion = 0;
-        var uso = 0;
-        var suelto = 0;
-        var toca = false;
-        for (k = 0; k < lista.length; k++) {
-          if (lista[k].id !== statId) continue;
-          toca = true;
-          if (lista[k].fuente === "creacion") creacion += lista[k].aporte;
-          else if (lista[k].fuente === "uso") uso += lista[k].aporte;
-          else suelto += lista[k].aporte;
-        }
-        if (!toca) continue;
         visto[clave] = true;
-        out.push({ nombre: app.nombre, creacion: creacion, uso: uso, suelto: suelto });
+        var lista = app.aportes || [];
+        for (var k = 0; k < lista.length; k++) {
+          var a = lista[k];
+          if (!mapa[a.stat]) {
+            mapa[a.stat] = { nombre: a.stat, exp: 0, apps: [] };
+            orden.push(a.stat);
+          }
+          mapa[a.stat].exp += a.exp;
+          mapa[a.stat].apps.push({ app: app, exp: a.exp, fuente: a.fuente });
+        }
       }
     }
+    var out = orden.map(function (n) { return mapa[n]; });
+    out.sort(function (a, b) { return b.exp - a.exp || a.nombre.localeCompare(b.nombre, "es"); });
+    for (i = 0; i < out.length; i++) out[i].apps.sort(function (a, b) { return b.exp - a.exp || a.app.nombre.localeCompare(b.app.nombre, "es"); });
     return out;
+  }
+
+  function nodo(tag, clase, texto) {
+    var n = document.createElement(tag);
+    if (clase) n.className = clase;
+    if (texto !== undefined) n.textContent = texto;
+    return n;
+  }
+
+  function insignia(texto) {
+    return nodo("span", "maz-exp", texto);
+  }
+
+  function barra(valor, max) {
+    var b = nodo("span", "maz-barra");
+    b.setAttribute("aria-hidden", "true");
+    var pasos = CFG.STAT_BARRA_PASOS;
+    var llenos = max > 0 ? Math.max(1, Math.round((valor / max) * pasos)) : 0;
+    for (var i = 0; i < pasos; i++) b.appendChild(nodo("span", i < llenos ? "maz-barra-on" : ""));
+    return b;
+  }
+
+  function textoExp(n) {
+    return n + " " + CFG.TEXTOS.EXP;
+  }
+
+  function mostrarLista(stats) {
+    var cuerpo = dialogoTrono.querySelector(".maz-trono-cuerpo");
+    cuerpo.replaceChildren();
+    if (!stats.length) {
+      cuerpo.appendChild(nodo("p", "maz-ayuda", CFG.TEXTOS.SIN_APORTE));
+      return;
+    }
+    cuerpo.appendChild(nodo("p", "maz-ayuda", CFG.TEXTOS.TOCA_STAT));
+    var ul = nodo("ul", "maz-stats");
+    var max = stats[0].exp;
+    stats.forEach(function (st) {
+      var li = nodo("li");
+      var b = nodo("button", "maz-stat");
+      b.type = "button";
+      b.setAttribute("aria-label", st.nombre + ", " + textoExp(st.exp));
+      b.appendChild(nodo("span", "maz-stat-nombre", st.nombre));
+      b.appendChild(insignia(textoExp(st.exp)));
+      b.appendChild(barra(st.exp, max));
+      b.addEventListener("click", function () { mostrarDesglose(st, stats); });
+      li.appendChild(b);
+      ul.appendChild(li);
+    });
+    cuerpo.appendChild(ul);
+  }
+
+  function mostrarDesglose(st, stats) {
+    var cuerpo = dialogoTrono.querySelector(".maz-trono-cuerpo");
+    cuerpo.replaceChildren();
+    var cab = nodo("div", "maz-desglose-cab");
+    var volver = nodo("button", "maz-boton maz-volver", "‹ " + CFG.TEXTOS.VOLVER);
+    volver.type = "button";
+    volver.addEventListener("click", function () { mostrarLista(stats); });
+    cab.appendChild(volver);
+    var tit = nodo("p", "maz-desglose-titulo");
+    tit.appendChild(nodo("span", "maz-stat-nombre", st.nombre));
+    tit.appendChild(insignia(textoExp(st.exp)));
+    cab.appendChild(tit);
+    cuerpo.appendChild(cab);
+    var ul = nodo("ul", "maz-stats maz-desglose");
+    st.apps.forEach(function (it) {
+      var li = nodo("li", "maz-aporte");
+      var ic = spriteEl(aspecto(it.app).icono, 2);
+      if (ic) li.appendChild(ic);
+      li.appendChild(nodo("span", "maz-aporte-app", it.app.nombre));
+      li.appendChild(nodo("span", "maz-fuente-tag maz-fuente-" + it.fuente, it.fuente === "uso" ? CFG.TEXTOS.USO : CFG.TEXTOS.CREACION));
+      li.appendChild(insignia("+" + it.exp));
+      ul.appendChild(li);
+    });
+    cuerpo.appendChild(ul);
+    volver.focus();
+  }
+
+  function abrirTrono(disparador) {
+    mostrarLista(statsDe(leerSalas()));
+    dialogoTrono._volver = disparador;
+    abrirDialogo(dialogoTrono);
+  }
+
+  function marcoDe(nivel) {
+    var f = frame("placa/" + nivel + "-9s");
+    if (!f || !hayDibujo()) return "";
+    try {
+      var e = CFG.PANEL_ESCALA;
+      var c = document.createElement("canvas");
+      c.width = f.w * e;
+      c.height = f.h * e;
+      var ctx = c.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(atlasImg, f.x, f.y, f.w, f.h, 0, 0, c.width, c.height);
+      return c.toDataURL();
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function aplicarMarco(nivel) {
+    var html = document.documentElement;
+    var url = marcoDe(nivel.id);
+    if (url) {
+      html.style.setProperty("--maz-marco", "url(" + url + ")");
+      html.style.setProperty("--maz-marco-corte", String(CFG.PANEL_BORDE * CFG.PANEL_ESCALA));
+    } else {
+      html.style.removeProperty("--maz-marco");
+      html.style.removeProperty("--maz-marco-corte");
+    }
   }
 
   function textoFaltan(n) {
@@ -1884,74 +1883,6 @@
     ajustarHoja(dialogoNiveles);
   }
 
-  function mostrarAportes(st) {
-    detalleTrono.replaceChildren();
-    var h = document.createElement("p");
-    h.className = "ajuste-ayuda";
-    h.textContent = st.nombre;
-    detalleTrono.appendChild(h);
-    var ul = document.createElement("ul");
-    ul.className = "maz-lista";
-    var items = aportesVisibles(st.id);
-    if (!items.length) {
-      var vacio = document.createElement("li");
-      vacio.className = "maz-fila";
-      vacio.textContent = CFG.TEXTOS.SIN_APORTE;
-      ul.appendChild(vacio);
-    }
-    for (var i = 0; i < items.length; i++) {
-      var li = document.createElement("li");
-      li.className = "maz-fila";
-      var nom = document.createElement("span");
-      nom.textContent = items[i].nombre;
-      var n = document.createElement("span");
-      n.className = "maz-marca";
-      var partes = [];
-      if (items[i].creacion) partes.push(CFG.TEXTOS.CREACION + " " + items[i].creacion);
-      if (items[i].uso) partes.push(CFG.TEXTOS.USO + " " + items[i].uso);
-      if (items[i].suelto) partes.push(String(items[i].suelto));
-      n.textContent = partes.join(" · ");
-      li.appendChild(nom);
-      li.appendChild(n);
-      ul.appendChild(li);
-    }
-    detalleTrono.appendChild(ul);
-    if (dialogoTrono && dialogoTrono.hasAttribute("open")) ajustarHoja(dialogoTrono);
-  }
-
-  function abrirTrono(disparador) {
-    var cajaStats = dialogoTrono.querySelector(".maz-stats");
-    cajaStats.replaceChildren();
-    detalleTrono.replaceChildren();
-    var visibles = statsVisibles(leerSalas());
-    if (!visibles.length) {
-      var vacio = document.createElement("p");
-      vacio.className = "ajuste-ayuda";
-      vacio.textContent = CFG.TEXTOS.SIN_APORTE;
-      cajaStats.appendChild(vacio);
-    }
-    for (var i = 0; i < visibles.length; i++) {
-      (function (st) {
-        var b = document.createElement("button");
-        b.type = "button";
-        b.className = "maz-stat";
-        var nom = document.createElement("span");
-        nom.textContent = st.nombre;
-        b.appendChild(nom);
-        if (tieneNivel(st.id)) {
-          var n = document.createElement("span");
-          n.textContent = st.nivel + "/" + CFG.NIVEL_MAX;
-          b.appendChild(n);
-        }
-        b.addEventListener("click", function () { mostrarAportes(st); });
-        cajaStats.appendChild(b);
-      })(visibles[i]);
-    }
-    dialogoTrono._volver = disparador;
-    abrirDialogo(dialogoTrono);
-    ajustarHoja(dialogoTrono);
-  }
-
   function crearDialogos() {
     dialogoAjustes = dialogobase("maz-ajustes-titulo");
     var h = document.createElement("h2");
@@ -1992,17 +1923,17 @@
       if (dialogoPila._volver && dialogoPila._volver.focus) dialogoPila._volver.focus();
     });
     dialogoTrono = dialogobase("maz-trono-titulo");
-    dialogoTrono.classList.add("maz-hoja-fit");
-    var ht = document.createElement("h2");
+    dialogoTrono.classList.add("maz-pixel", "maz-trono-hoja");
+    var cabTrono = nodo("div", "maz-trono-cab");
+    var mini = nodo("span", "maz-trono-mini");
+    mini.setAttribute("aria-hidden", "true");
+    mini.style.backgroundImage = "url(\"img/mazmorra/trono.png?v=" + CFG.VERSION + "\")";
+    var ht = nodo("h2", "", CFG.TEXTOS.TRONO);
     ht.id = "maz-trono-titulo";
-    ht.textContent = CFG.TEXTOS.TRONO;
-    var stats = document.createElement("div");
-    stats.className = "maz-stats";
-    detalleTrono = document.createElement("div");
-    detalleTrono.className = "maz-detalle";
-    dialogoTrono.appendChild(ht);
-    dialogoTrono.appendChild(stats);
-    dialogoTrono.appendChild(detalleTrono);
+    cabTrono.appendChild(mini);
+    cabTrono.appendChild(ht);
+    dialogoTrono.appendChild(cabTrono);
+    dialogoTrono.appendChild(nodo("div", "maz-trono-cuerpo"));
     dialogoTrono.appendChild(botonCerrar(dialogoTrono));
     dialogoTrono.addEventListener("close", function () {
       if (dialogoTrono._volver && dialogoTrono._volver.focus) dialogoTrono._volver.focus();

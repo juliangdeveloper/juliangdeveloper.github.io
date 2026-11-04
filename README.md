@@ -12,11 +12,12 @@ Juegos y herramientas que se abren en el navegador, sin instalar.
 - **＋ Agregar proyecto** acepta `usuario.github.io/repo`, `github.com/usuario/repo` o `usuario/repo`.
 - **✕** deja de seguir un proyecto y se puede deshacer. **Restaurar proyectos por defecto** devuelve los de fábrica y conserva los que agregaste. El proyecto fijo se queda y no tiene ✕.
 - La lista queda en este navegador. En el celular y en la tablet la pantalla no se desplaza.
-- La fase, el estado y el objetivo salen solo de `meta.v1.<app>` cuando el registro es válido (`v` 1, el mismo slug y fase, estado y fases completadas dentro de rango). Si no hay meta, o está incompleta o inválida, la tarjeta sigue en Proyectos y la página no se rompe.
+- La fase, el estado y el objetivo salen de `meta.v1.<app>`. Basta con `proyecto.fase` de 1 a 7; si `v` o `slug` vienen, deben ser `1` y el slug de la app. Lo que falte toma un valor por defecto y lo inválido se ignora.
+- Una app sin meta, o con una meta ilegible, queda en **Planeación**. Al tocarla aparece **Falta información** con **Copiar prompt** (las instrucciones para que la app escriba su meta) y **Ya lo hice** (abre la app). Las apps con meta válida se abren directo.
 - En **Ajustes**, **Mazmorra** empieza apagada. Cada proyecto es un objeto en la sala de su fase. Definición y Diseño comparten sala. Una sala sin proyectos no se muestra.
 - Toca el nivel (Ceniza, Brasa, Llama, Forja o Faro) para ver cuántos lanzamientos pide, cuántos proyectos caben y cuánto falta para el siguiente.
 - Si una sala supera su cupo, lo que sobra es una pila con el número. Al tocarla ves las apps de esa sala.
-- **Trono** lista las habilidades que las apps guardan en `proyecto.aportes`: `id`, `aporte` de 1 a 99 y `fuente` `creacion` o `uso`. Si `proyecto.bloqueada` es `true`, el objeto se ve bloqueado.
+- **Trono** suma las habilidades de `proyecto.aportes`: `{ "stat": "Programación", "exp": 5, "fuente": "creacion" }`, con `exp` de 1 a 99 y `fuente` `creacion` o `uso`. También acepta el formato viejo `{ id, aporte, fuente }`. El nombre se muestra tal cual y los nombres idénticos suman su EXP. Toca una habilidad para ver qué app la sube, cuánto y si es por creación o por uso. Si `proyecto.bloqueada` es `true`, el objeto se ve bloqueado.
 
 ## Stack
 
