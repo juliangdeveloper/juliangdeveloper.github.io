@@ -689,19 +689,37 @@
     try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
+  function idStat(s) {
+    if (typeof s !== "string") return "";
+    var t = s.trim().toLowerCase();
+    if (t.length < 1 || t.length > CFG.STAT_ID_MAX) return "";
+    if (!/^[a-z0-9][a-z0-9_-]*$/.test(t)) return "";
+    return t;
+  }
+
+  function fuenteDe(s) {
+    return s === "creacion" || s === "uso" ? s : "";
+  }
+
   function aportesDe(lista) {
     if (!Array.isArray(lista)) return [];
-    var validos = {};
-    for (var i = 0; i < CFG.STATS.length; i++) validos[CFG.STATS[i].id] = true;
-    var out = [];
-    var vistos = {};
-    for (var j = 0; j < lista.length && out.length < CFG.STATS.length; j++) {
+    var mapa = {};
+    var orden = [];
+    for (var j = 0; j < lista.length; j++) {
       var it = lista[j];
-      if (!it || typeof it.id !== "string" || !validos[it.id] || vistos[it.id]) continue;
-      if (!entero(it.aporte, 1, CFG.APORTE_MAX)) continue;
-      vistos[it.id] = true;
-      out.push({ id: it.id, aporte: it.aporte });
+      if (!it || typeof it !== "object") continue;
+      var id = idStat(it.id);
+      if (!id || !entero(it.aporte, 1, CFG.APORTE_MAX)) continue;
+      var fuente = fuenteDe(it.fuente);
+      var clave = id + "|" + fuente;
+      if (!mapa[clave]) {
+        mapa[clave] = { id: id, aporte: 0, fuente: fuente };
+        orden.push(clave);
+      }
+      mapa[clave].aporte += it.aporte;
     }
+    var out = [];
+    for (var i = 0; i < orden.length; i++) out.push(mapa[orden[i]]);
     return out;
   }
 
@@ -1098,9 +1116,13 @@
     el.classList.add(claseEstado(app));
     if (app.bloqueada) el.setAttribute("aria-label", app.nombre + ", " + CFG.TEXTOS.BLOQUEADA);
     if (!app.bloqueada) return;
-    var c = document.createElement("span");
+    var c = document.createElement("img");
     c.className = "maz-candado";
-    c.setAttribute("aria-hidden", "true");
+    c.alt = "";
+    c.width = CFG.CANDADO_PX;
+    c.height = CFG.CANDADO_PX;
+    c.decoding = "async";
+    c.src = "img/mazmorra/candado.png?v=" + CFG.VERSION;
     el.appendChild(c);
   }
 
@@ -1214,7 +1236,9 @@
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
     el.setAttribute("aria-label", sala.nombre + ", +" + cuenta);
-    if (racimo) {
+    var arte = pilaImg(sala.fase);
+    if (arte) el.appendChild(arte);
+    else if (racimo) {
       var sp = spriteEl("lanz/racimo-pila", 2);
       if (sp) {
         sp.style.position = "absolute";
@@ -1223,7 +1247,7 @@
         el.appendChild(sp);
       }
     }
-    if (!el.querySelector(".maz-px, .maz-sprite")) {
+    if (!el.querySelector(".maz-px, .maz-sprite, .maz-pila-sprite")) {
       var tema = temaDe(sala.fase === "23" ? "2" : sala.fase);
       var tipos = tema.objetos || ["cofre"];
       respaldo(el, tipos[0], 10, 6, 52, 52);
@@ -1235,6 +1259,19 @@
     el.appendChild(et);
     el.addEventListener("click", function () { abrirPila(sala.nombre, todas, el); });
     return el;
+  }
+
+  function pilaImg(fase) {
+    var nombre = CFG.PILAS[fase];
+    if (!nombre) return null;
+    var img = document.createElement("img");
+    img.className = "maz-pila-sprite";
+    img.alt = "";
+    img.width = CFG.PILA_PX;
+    img.height = CFG.PILA_PX;
+    img.decoding = "async";
+    img.src = "img/mazmorra/" + nombre + "?v=" + CFG.VERSION;
+    return img;
   }
 
   function binRect(sala) {
@@ -1517,7 +1554,7 @@
       for (var j = 0; j < salas[i].apps.length; j++) {
         var app = salas[i].apps[j];
         var ap = [];
-        for (var k = 0; k < (app.aportes || []).length; k++) ap.push(app.aportes[k].id + ":" + app.aportes[k].aporte);
+        for (var k = 0; k < (app.aportes || []).length; k++) ap.push(app.aportes[k].id + ":" + app.aportes[k].fuente + ":" + app.aportes[k].aporte);
         ids.push([app.id, app.href, app.nombre, app.estado, app.completadas, app.bloqueada ? "b" : "", ap.join("+"), app.emoji, app.boton, app.descripcion].join("@"));
       }
       partes.push(salas[i].fase + ":" + ids.join(","));
@@ -1647,6 +1684,12 @@
     try { localStorage.setItem(CFG.CLAVE_MAZMORRA, on ? CFG.VALOR_ON : CFG.VALOR_OFF); } catch (e) {}
   }
 
+  function ajustarHoja(d) {
+    var tope = window.innerHeight - 16;
+    d.style.height = "auto";
+    if (d.scrollHeight > tope) d.style.height = tope + "px";
+  }
+
   function abrirDialogo(d) {
     if (typeof d.showModal === "function") d.showModal();
     else d.setAttribute("open", "");
@@ -1705,6 +1748,50 @@
     return acciones;
   }
 
+  function nombreStat(id) {
+    for (var i = 0; i < CFG.STATS.length; i++) {
+      if (CFG.STATS[i].id === id) return CFG.STATS[i].nombre;
+    }
+    return id.charAt(0).toUpperCase() + id.slice(1);
+  }
+
+  function nivelBase(id) {
+    for (var i = 0; i < CFG.STATS.length; i++) {
+      if (CFG.STATS[i].id !== id) continue;
+      return entero(CFG.STATS[i].nivel, 0, CFG.NIVEL_MAX) ? CFG.STATS[i].nivel : 0;
+    }
+    return 0;
+  }
+
+  function tieneNivel(id) {
+    for (var i = 0; i < CFG.STATS.length; i++) {
+      if (CFG.STATS[i].id === id && entero(CFG.STATS[i].nivel, 0, CFG.NIVEL_MAX)) return true;
+    }
+    return false;
+  }
+
+  function statsVisibles(salas) {
+    var reportados = {};
+    var i, j, k, app, lista;
+    for (i = 0; i < salas.length; i++) {
+      for (j = 0; j < salas[i].apps.length; j++) {
+        lista = salas[i].apps[j].aportes || [];
+        for (k = 0; k < lista.length; k++) reportados[lista[k].id] = true;
+      }
+    }
+    var conocidos = {};
+    var out = [];
+    for (i = 0; i < CFG.STATS.length; i++) {
+      var id = CFG.STATS[i].id;
+      conocidos[id] = true;
+      if (!tieneNivel(id) && !reportados[id]) continue;
+      out.push({ id: id, nombre: CFG.STATS[i].nombre, nivel: nivelBase(id) });
+    }
+    var extra = Object.keys(reportados).filter(function (id) { return !conocidos[id]; }).sort();
+    for (i = 0; i < extra.length; i++) out.push({ id: extra[i], nombre: nombreStat(extra[i]), nivel: 0 });
+    return out;
+  }
+
   function aportesVisibles(statId) {
     var salas = leerSalas();
     var out = [];
@@ -1713,13 +1800,23 @@
     for (i = 0; i < salas.length; i++) {
       for (j = 0; j < salas[i].apps.length; j++) {
         app = salas[i].apps[j];
-        if (visto[app.slug || app.id]) continue;
+        var clave = app.slug || app.id;
+        if (visto[clave]) continue;
         var lista = app.aportes || [];
+        var creacion = 0;
+        var uso = 0;
+        var suelto = 0;
+        var toca = false;
         for (k = 0; k < lista.length; k++) {
           if (lista[k].id !== statId) continue;
-          visto[app.slug || app.id] = true;
-          out.push({ nombre: app.nombre, aporte: lista[k].aporte });
+          toca = true;
+          if (lista[k].fuente === "creacion") creacion += lista[k].aporte;
+          else if (lista[k].fuente === "uso") uso += lista[k].aporte;
+          else suelto += lista[k].aporte;
         }
+        if (!toca) continue;
+        visto[clave] = true;
+        out.push({ nombre: app.nombre, creacion: creacion, uso: uso, suelto: suelto });
       }
     }
     return out;
@@ -1769,6 +1866,7 @@
     }
     dialogoNiveles._volver = disparador;
     abrirDialogo(dialogoNiveles);
+    ajustarHoja(dialogoNiveles);
   }
 
   function mostrarAportes(st) {
@@ -1793,19 +1891,25 @@
       nom.textContent = items[i].nombre;
       var n = document.createElement("span");
       n.className = "maz-marca";
-      n.textContent = String(items[i].aporte);
+      var partes = [];
+      if (items[i].creacion) partes.push(CFG.TEXTOS.CREACION + " " + items[i].creacion);
+      if (items[i].uso) partes.push(CFG.TEXTOS.USO + " " + items[i].uso);
+      if (items[i].suelto) partes.push(String(items[i].suelto));
+      n.textContent = partes.join(" · ");
       li.appendChild(nom);
       li.appendChild(n);
       ul.appendChild(li);
     }
     detalleTrono.appendChild(ul);
+    if (dialogoTrono && dialogoTrono.hasAttribute("open")) ajustarHoja(dialogoTrono);
   }
 
   function abrirTrono(disparador) {
     var cajaStats = dialogoTrono.querySelector(".maz-stats");
     cajaStats.replaceChildren();
     detalleTrono.replaceChildren();
-    for (var i = 0; i < CFG.STATS.length; i++) {
+    var visibles = statsVisibles(leerSalas());
+    for (var i = 0; i < visibles.length; i++) {
       (function (st) {
         var b = document.createElement("button");
         b.type = "button";
@@ -1818,17 +1922,11 @@
         b.appendChild(n);
         b.addEventListener("click", function () { mostrarAportes(st); });
         cajaStats.appendChild(b);
-      })(CFG.STATS[i]);
+      })(visibles[i]);
     }
     dialogoTrono._volver = disparador;
     abrirDialogo(dialogoTrono);
-  }
-
-  function tronoSprite() {
-    return crearSvg(
-      '<g stroke="#171110" stroke-width="1.2"><rect x="-16" y="-18" width="6" height="28" fill="#4a2834"/><rect x="10" y="-18" width="6" height="28" fill="#4a2834"/><rect x="-12" y="-16" width="24" height="10" fill="#8a4a5c"/><rect x="-14" y="-6" width="28" height="14" fill="#6a3a4a"/><rect x="-10" y="8" width="6" height="8" fill="#3b3431"/><rect x="4" y="8" width="6" height="8" fill="#3b3431"/></g>',
-      "-20 -22 40 40"
-    );
+    ajustarHoja(dialogoTrono);
   }
 
   function crearDialogos() {
@@ -1871,12 +1969,14 @@
       if (dialogoPila._volver && dialogoPila._volver.focus) dialogoPila._volver.focus();
     });
     dialogoTrono = dialogobase("maz-trono-titulo");
+    dialogoTrono.classList.add("maz-hoja-fit");
     var ht = document.createElement("h2");
     ht.id = "maz-trono-titulo";
     ht.textContent = CFG.TEXTOS.TRONO;
     var stats = document.createElement("div");
     stats.className = "maz-stats";
     detalleTrono = document.createElement("div");
+    detalleTrono.className = "maz-detalle";
     dialogoTrono.appendChild(ht);
     dialogoTrono.appendChild(stats);
     dialogoTrono.appendChild(detalleTrono);
@@ -1928,7 +2028,11 @@
     trono.type = "button";
     trono.className = "maz-trono";
     trono.setAttribute("aria-label", CFG.TEXTOS.TRONO);
-    trono.appendChild(tronoSprite());
+    var sprite = document.createElement("span");
+    sprite.className = "maz-trono-sprite";
+    sprite.setAttribute("aria-hidden", "true");
+    sprite.style.backgroundImage = "url(\"img/mazmorra/trono.png?v=" + CFG.VERSION + "\")";
+    trono.appendChild(sprite);
     trono.addEventListener("click", function () { abrirTrono(trono); });
     placaTexto = document.createElement("button");
     placaTexto.type = "button";

@@ -9,7 +9,7 @@
   }
 
   window.PORTAFOLIO_CONFIG = congelar({
-    VERSION: "16",
+    VERSION: "17",
     CLAVE_MAZMORRA: "portafolio.v1.mazmorra",
     VALOR_ON: "1",
     VALOR_OFF: "0",
@@ -28,7 +28,23 @@
     ANTORCHA_PASO: 0.37,
     NIVEL_MAX: 10,
     APORTE_MAX: 99,
+    STAT_ID_MAX: 32,
+    TRONO_W: 64,
+    TRONO_H: 80,
+    TRONO_TIRA: 128,
+    TRONO_MS: 600,
+    CANDADO_PX: 32,
+    PILA_PX: 32,
     CLAVE_META: "meta.v1.",
+    PILAS: {
+      "0": "pila-proyectos.png",
+      "1": "pila-idea.png",
+      "2": "pila-definicion.png",
+      "3": "pila-definicion.png",
+      "23": "pila-definicion.png",
+      "4": "pila-construccion.png",
+      "5": "pila-validacion.png"
+    },
     NIVELES: [
       { id: "ceniza", nombre: "Ceniza", min: 0, cupo: 2, fondo: "#070304", fuego: "#ff5a3a" },
       { id: "brasa", nombre: "Brasa", min: 2, cupo: 3, fondo: "#120403", fuego: "#ff8a3a" },
@@ -101,7 +117,11 @@
     STATS: [
       { id: "musical", nombre: "Habilidad musical", nivel: 2 },
       { id: "perseverancia", nombre: "Perseverancia", nivel: 3 },
-      { id: "disciplina", nombre: "Disciplina", nivel: 5 }
+      { id: "disciplina", nombre: "Disciplina", nivel: 5 },
+      { id: "fuerza", nombre: "Fuerza" },
+      { id: "tecnica", nombre: "Técnica" },
+      { id: "reflejos", nombre: "Reflejos" },
+      { id: "programacion", nombre: "Programación" }
     ],
     TEXTOS: {
       AJUSTES: "Ajustes",
@@ -115,6 +135,8 @@
       TRONO: "Trono",
       BLOQUEADA: "Bloqueada",
       SIN_APORTE: "Nadie la alimenta todavía.",
+      CREACION: "Creación",
+      USO: "Uso",
       NIVELES: "Niveles",
       ACTUAL: "Actual",
       LANZAMIENTOS: "lanzamientos",
