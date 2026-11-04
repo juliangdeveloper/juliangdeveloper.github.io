@@ -1748,47 +1748,62 @@
     return acciones;
   }
 
+  function catalogoStats() {
+    return Array.isArray(CFG.STATS) ? CFG.STATS : [];
+  }
+
   function nombreStat(id) {
-    for (var i = 0; i < CFG.STATS.length; i++) {
-      if (CFG.STATS[i].id === id) return CFG.STATS[i].nombre;
+    var lista = catalogoStats();
+    var i;
+    for (i = 0; i < lista.length; i++) {
+      if (lista[i] && lista[i].id === id && lista[i].nombre) return lista[i].nombre;
     }
-    return id.charAt(0).toUpperCase() + id.slice(1);
+    var partes = String(id || "").split(/[_-]+/);
+    for (i = 0; i < partes.length; i++) {
+      if (!partes[i]) continue;
+      partes[i] = partes[i].charAt(0).toUpperCase() + partes[i].slice(1);
+    }
+    return partes.join(" ");
   }
 
   function nivelBase(id) {
-    for (var i = 0; i < CFG.STATS.length; i++) {
-      if (CFG.STATS[i].id !== id) continue;
-      return entero(CFG.STATS[i].nivel, 0, CFG.NIVEL_MAX) ? CFG.STATS[i].nivel : 0;
+    var lista = catalogoStats();
+    for (var i = 0; i < lista.length; i++) {
+      if (!lista[i] || lista[i].id !== id) continue;
+      return entero(lista[i].nivel, 0, CFG.NIVEL_MAX) ? lista[i].nivel : 0;
     }
     return 0;
   }
 
   function tieneNivel(id) {
-    for (var i = 0; i < CFG.STATS.length; i++) {
-      if (CFG.STATS[i].id === id && entero(CFG.STATS[i].nivel, 0, CFG.NIVEL_MAX)) return true;
+    var lista = catalogoStats();
+    for (var i = 0; i < lista.length; i++) {
+      if (lista[i] && lista[i].id === id && entero(lista[i].nivel, 0, CFG.NIVEL_MAX)) return true;
     }
     return false;
   }
 
   function statsVisibles(salas) {
     var reportados = {};
-    var i, j, k, app, lista;
+    var i, j, k, lista;
     for (i = 0; i < salas.length; i++) {
       for (j = 0; j < salas[i].apps.length; j++) {
         lista = salas[i].apps[j].aportes || [];
-        for (k = 0; k < lista.length; k++) reportados[lista[k].id] = true;
+        for (k = 0; k < lista.length; k++) if (lista[k] && lista[k].id) reportados[lista[k].id] = true;
       }
     }
     var conocidos = {};
+    var catalogo = catalogoStats();
     var out = [];
-    for (i = 0; i < CFG.STATS.length; i++) {
-      var id = CFG.STATS[i].id;
+    for (i = 0; i < catalogo.length; i++) {
+      if (!catalogo[i] || !catalogo[i].id) continue;
+      var id = catalogo[i].id;
       conocidos[id] = true;
       if (!tieneNivel(id) && !reportados[id]) continue;
-      out.push({ id: id, nombre: CFG.STATS[i].nombre, nivel: nivelBase(id) });
+      out.push({ id: id, nombre: catalogo[i].nombre || nombreStat(id), nivel: nivelBase(id) });
     }
-    var extra = Object.keys(reportados).filter(function (id) { return !conocidos[id]; }).sort();
-    for (i = 0; i < extra.length; i++) out.push({ id: extra[i], nombre: nombreStat(extra[i]), nivel: 0 });
+    var extra = Object.keys(reportados).filter(function (sid) { return !conocidos[sid]; }).sort();
+    for (i = 0; i < extra.length; i++) out.push({ id: extra[i], nombre: nombreStat(extra[i]), nivel: nivelBase(extra[i]) });
     return out;
   }
 
@@ -1909,6 +1924,12 @@
     cajaStats.replaceChildren();
     detalleTrono.replaceChildren();
     var visibles = statsVisibles(leerSalas());
+    if (!visibles.length) {
+      var vacio = document.createElement("p");
+      vacio.className = "ajuste-ayuda";
+      vacio.textContent = CFG.TEXTOS.SIN_APORTE;
+      cajaStats.appendChild(vacio);
+    }
     for (var i = 0; i < visibles.length; i++) {
       (function (st) {
         var b = document.createElement("button");
@@ -1916,10 +1937,12 @@
         b.className = "maz-stat";
         var nom = document.createElement("span");
         nom.textContent = st.nombre;
-        var n = document.createElement("span");
-        n.textContent = st.nivel + "/" + CFG.NIVEL_MAX;
         b.appendChild(nom);
-        b.appendChild(n);
+        if (tieneNivel(st.id)) {
+          var n = document.createElement("span");
+          n.textContent = st.nivel + "/" + CFG.NIVEL_MAX;
+          b.appendChild(n);
+        }
         b.addEventListener("click", function () { mostrarAportes(st); });
         cajaStats.appendChild(b);
       })(visibles[i]);
