@@ -9,7 +9,7 @@
   }
 
   window.PORTAFOLIO_CONFIG = congelar({
-    VERSION: "17",
+    VERSION: "18",
     CLAVE_MAZMORRA: "portafolio.v1.mazmorra",
     VALOR_ON: "1",
     VALOR_OFF: "0",
@@ -114,15 +114,6 @@
       DT_MAX: 64,
       DT_INICIAL: 16
     },
-    STATS: [
-      { id: "musical", nombre: "Habilidad musical", nivel: 2 },
-      { id: "perseverancia", nombre: "Perseverancia", nivel: 3 },
-      { id: "disciplina", nombre: "Disciplina", nivel: 5 },
-      { id: "fuerza", nombre: "Fuerza" },
-      { id: "tecnica", nombre: "Técnica" },
-      { id: "reflejos", nombre: "Reflejos" },
-      { id: "programacion", nombre: "Programación" }
-    ],
     TEXTOS: {
       AJUSTES: "Ajustes",
       MAZMORRA: "Mazmorra",
