@@ -189,19 +189,34 @@ html.mazmorra main{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-
 html.mazmorra footer{flex:none;padding-top:4px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
 html.mazmorra footer p{margin:0}
 .mazmorra{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden;color:#f3e6dc;user-select:none;-webkit-user-select:none}
-.maz-placa{flex:none;margin:0 0 4px;text-align:center;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--maz-fuego,#ffb53a)}
-.maz-lienzo{position:relative;flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable;-webkit-overflow-scrolling:touch}
+.maz-placa{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;margin:0 4px 4px;text-align:center;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--maz-fuego,#ffb53a)}
+.maz-placa-texto{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.maz-trono{flex:none;width:44px;height:44px;padding:4px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer;touch-action:manipulation}
+.maz-trono svg{width:100%;height:100%;display:block;animation:maz-bote 4.2s ease-in-out infinite}
+.maz-lienzo{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
 .maz-escala{width:100%;overflow:hidden;display:flex;justify-content:center}
 .maz-mundo{position:relative;flex:none;width:375px}
 .maz-vacio{margin:24px 16px;text-align:center;color:#f3e6dc}
-.maz-sala{position:absolute}
+.maz-sala{position:absolute;overflow:hidden}
 .maz-sala canvas,.maz-pasillo{position:absolute;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}
 .maz-sala h3{position:absolute;z-index:50;left:12px;top:6px;right:44px;margin:0;font-size:11px;font-weight:700;line-height:1.15;color:#f0e0cc;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .maz-px{display:block;background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;flex:none}
-.maz-obj,.maz-pila,.maz-bin{position:absolute;width:76px;height:94px;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-decoration:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.maz-obj,.maz-pila,.maz-bin,.maz-fuente{position:absolute;width:76px;height:94px;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-decoration:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .maz-bin{width:48px;height:48px}
-.maz-obj:hover,.maz-pila:hover,.maz-bin:hover{transform:translateY(-2px)}
-.maz-obj:focus-visible,.maz-pila:focus-visible,.maz-bin:focus-visible{outline:2px solid var(--maz-fuego,#ffb53a);outline-offset:1px}
+.maz-fuente{width:72px;height:80px;overflow:hidden}
+.maz-pila{overflow:hidden}
+.maz-obj:focus-visible,.maz-pila:focus-visible,.maz-bin:focus-visible,.maz-fuente:focus-visible,.maz-trono:focus-visible,.maz-stat:focus-visible{outline:2px solid var(--maz-fuego,#ffb53a);outline-offset:1px}
+.maz-estado-0{animation:maz-pulso-suave 4.8s ease-in-out infinite}
+.maz-estado-1{animation:maz-bote 3.2s ease-in-out infinite}
+.maz-estado-3{animation:maz-pulso-suave 2.4s ease-in-out infinite}
+.maz-estado-4,.maz-fuente{animation:maz-brillo 2.8s ease-in-out infinite}
+.maz-pila{animation:maz-bote 3.6s ease-in-out infinite}
+.maz-bloqueada{animation:none;filter:grayscale(.45)}
+.maz-candado{position:absolute;z-index:6;left:8px;right:8px;top:36px;height:8px;background:repeating-linear-gradient(90deg,#e6c98a 0 5px,#2a160c 5px 8px);box-shadow:0 0 0 1px #2a160c;pointer-events:none}
+.maz-candado::after{content:"";position:absolute;left:50%;top:-10px;width:16px;height:18px;transform:translateX(-50%);background:linear-gradient(#e6c98a,#e6c98a) center 9px/12px 9px no-repeat,radial-gradient(circle at 50% 5px,transparent 3px,#e6c98a 3.5px,#e6c98a 6px,transparent 6.5px)}
+.maz-marca{margin-left:auto;color:#e6c98a;font-size:.82rem;font-weight:700}
+.maz-stats{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.maz-stat{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;touch-action:manipulation}
 .maz-sprite{position:absolute;left:6px;top:0;width:64px;height:64px;pointer-events:none}
 .maz-sprite svg{width:100%;height:100%;display:block}
 .maz-rotulo{position:absolute;left:0;top:68px;width:76px;height:26px;background-color:rgba(28,18,14,.9);background-repeat:no-repeat;background-size:100% 100%;z-index:2;pointer-events:none}
@@ -219,10 +234,12 @@ html.mazmorra footer p{margin:0}
 @keyframes maz-halo-brillo{0%,100%{opacity:.55}50%{opacity:1}}
 @keyframes maz-vaiven{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
 @keyframes maz-mota{0%{opacity:0;transform:translateY(0)}40%{opacity:.9}100%{opacity:0;transform:translateY(-14px)}}
-html.maz-pausa .maz-parpadeo,html.maz-pausa .maz-halo-brillo,html.maz-pausa .maz-vaiven,html.maz-pausa .maz-mota{animation-play-state:paused}
+@keyframes maz-pulso-suave{0%,100%{opacity:.72}50%{opacity:1}}
+@keyframes maz-bote{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes maz-brillo{0%,100%{opacity:.8}50%{opacity:1}}
+html.maz-pausa .maz-parpadeo,html.maz-pausa .maz-halo-brillo,html.maz-pausa .maz-vaiven,html.maz-pausa .maz-mota,html.maz-pausa .maz-estado-0,html.maz-pausa .maz-estado-1,html.maz-pausa .maz-estado-3,html.maz-pausa .maz-estado-4,html.maz-pausa .maz-pila,html.maz-pausa .maz-fuente,html.maz-pausa .maz-trono svg{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){
-.maz-parpadeo,.maz-halo-brillo,.maz-vaiven,.maz-mota,.maz-obj,.maz-pila,.maz-bin{animation:none;transition:none}
-.maz-parpadeo,.maz-halo-brillo{opacity:.85}
+.maz-parpadeo,.maz-halo-brillo,.maz-vaiven,.maz-mota,.maz-estado-0,.maz-estado-1,.maz-estado-3,.maz-estado-4,.maz-pila,.maz-fuente,.maz-trono svg{animation:none}
+.maz-parpadeo,.maz-halo-brillo,.maz-estado-0,.maz-estado-3,.maz-estado-4,.maz-fuente{opacity:.9}
 .maz-mota{opacity:.75;transform:none}
-.maz-obj:hover,.maz-pila:hover,.maz-bin:hover{transform:none}
 }

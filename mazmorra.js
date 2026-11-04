@@ -25,6 +25,8 @@
   var fases = null;
   var raiz = null;
   var placa = null;
+  var placaTexto = null;
+  var enVista = true;
   var lienzoEl = null;
   var escalaEl = null;
   var salasEl = null;
@@ -38,6 +40,8 @@
   var dialogoPila = null;
   var tituloPila = null;
   var listaPila = null;
+  var dialogoTrono = null;
+  var detalleTrono = null;
   var atlas = null;
   var atlasImg = null;
   var atlasCss = "";
@@ -432,12 +436,12 @@
       for (j = 0; j < grupo.length; j++) {
         var s = grupo[j];
         s.x = 12 + x;
-        s.y = y + (fnv(s.fase + "y") % 3) * 12;
+        s.y = y;
         x += s.w + HUECO;
         var bajo = s.y + s.h - y;
         if (bajo > altoB) altoB = bajo;
       }
-      y += altoB + HUECO + 8;
+      y += altoB + 8;
     }
     return y;
   }
@@ -518,6 +522,7 @@
 
   function ordenar(proyectos) {
     return proyectos.slice().sort(function (a, b) {
+      if (!!a.bloqueada !== !!b.bloqueada) return a.bloqueada ? -1 : 1;
       var ha = fnv(a.id || a.nombre);
       var hb = fnv(b.id || b.nombre);
       return ha < hb ? -1 : ha > hb ? 1 : 0;
@@ -656,7 +661,8 @@
       descripcion: desc,
       boton: btn ? btn.textContent.replace(/\s+/g, " ").trim() : "",
       estado: estado,
-      completadas: comp
+      completadas: comp,
+      bloqueada: card.getAttribute("data-bloqueada") === "1"
     };
   }
 
@@ -1038,10 +1044,24 @@
     el.appendChild(s);
   }
 
+  function claseEstado(app) {
+    return app.bloqueada ? "maz-bloqueada" : "maz-estado-" + app.estado;
+  }
+
+  function marcarEstado(el, app) {
+    el.classList.add(claseEstado(app));
+    if (app.bloqueada) el.setAttribute("aria-label", app.nombre + ", " + CFG.TEXTOS.BLOQUEADA);
+    if (!app.bloqueada) return;
+    var c = document.createElement("span");
+    c.className = "maz-candado";
+    c.setAttribute("aria-hidden", "true");
+    el.appendChild(c);
+  }
+
   function objetoEl(sala, app, cx, by, nivel) {
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
-    el.className = "maz-obj";
+    el.className = "maz-obj " + claseEstado(app);
     el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
@@ -1063,12 +1083,13 @@
       sp.style.top = "0";
       sp.style.zIndex = "1";
       el.appendChild(sp);
-      ponerEstado(el, app, 54, 0);
+      if (!app.bloqueada) ponerEstado(el, app, 54, 0);
     } else {
       var tema = temaDe(sala.fase === "23" ? "2" : sala.fase);
       var tipos = tema.objetos || ["cofre"];
       respaldo(el, tipos[fnv(semillaDe(app)) % tipos.length], 6, 0, 64, 64);
     }
+    if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
     return el;
   }
@@ -1076,7 +1097,7 @@
   function fragmentoEl(sala, app, cx, by, nivel) {
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
-    el.className = "maz-obj";
+    el.className = "maz-obj " + claseEstado(app);
     el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
@@ -1088,8 +1109,9 @@
       sp.style.left = "22px";
       sp.style.top = "0";
       el.appendChild(sp);
-      ponerEstado(el, app, 38, 0);
+      if (!app.bloqueada) ponerEstado(el, app, 38, 0);
     } else respaldo(el, "cristal", 6, 0, 64, 64);
+    if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
     return el;
   }
@@ -1097,7 +1119,7 @@
   function cajaEl(sala, app, cx, by, nivel) {
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
-    el.className = "maz-obj";
+    el.className = "maz-obj " + claseEstado(app);
     el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
@@ -1118,8 +1140,9 @@
         ic.style.zIndex = "2";
         el.appendChild(ic);
       }
-      ponerEstado(el, app, 46, 16);
+      if (!app.bloqueada) ponerEstado(el, app, 46, 16);
     } else respaldo(el, "caja", 6, 0, 64, 64);
+    if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
     return el;
   }
@@ -1137,35 +1160,34 @@
     }
   }
 
-  function pilaEl(sala, resto, cx, by, nivel, racimo) {
+  function pilaEl(sala, todas, cuenta, cx, by, nivel, racimo) {
     var el = document.createElement("button");
     el.type = "button";
     el.className = "maz-pila";
     el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
-    el.setAttribute("aria-label", sala.nombre + ", +" + resto.length);
+    el.setAttribute("aria-label", sala.nombre + ", +" + cuenta);
     if (racimo) {
       var sp = spriteEl("lanz/racimo-pila", 2);
       if (sp) {
         sp.style.position = "absolute";
-        sp.style.left = "6px";
-        sp.style.top = "0";
+        sp.style.left = "14px";
+        sp.style.top = "8px";
         el.appendChild(sp);
       }
-    } else if (!hayDibujo()) {
-      respaldo(el, "cofre", 6, 0, 64, 64);
     }
-    minis(el, resto);
-    var gancho = spriteEl("pila/gancho", 1);
-    if (gancho) {
-      gancho.style.position = "absolute";
-      gancho.style.left = "50px";
-      gancho.style.top = "58px";
-      el.appendChild(gancho);
+    if (!el.querySelector(".maz-px, .maz-sprite")) {
+      var tema = temaDe(sala.fase === "23" ? "2" : sala.fase);
+      var tipos = tema.objetos || ["cofre"];
+      respaldo(el, tipos[0], 10, 6, 52, 52);
     }
-    el.appendChild(etiqueta("+" + resto.length));
-    el.addEventListener("click", function () { abrirPila(sala.nombre, resto, el); });
+    var et = etiqueta("+" + cuenta);
+    et.style.left = "auto";
+    et.style.right = "2px";
+    et.style.top = "2px";
+    el.appendChild(et);
+    el.addEventListener("click", function () { abrirPila(sala.nombre, todas, el); });
     return el;
   }
 
@@ -1190,43 +1212,40 @@
       et.style.left = "4px";
       et.style.top = "32px";
       el.appendChild(et);
-      el.addEventListener("click", function () { abrirPila(sala.nombre, resto, el); });
+      el.addEventListener("click", function () { abrirPila(sala.nombre, sala.apps, el); });
     } else el.setAttribute("aria-hidden", "true");
     return el;
   }
 
-  function fuenteEl(sala, pt) {
+  function fuenteEl(sala, pt, apps) {
     var cx = pt[0];
     var by = pt[1];
-    var grupo = document.createElement("div");
-    grupo.setAttribute("aria-hidden", "true");
-    grupo.style.position = "absolute";
-    grupo.style.left = "0";
-    grupo.style.top = "0";
-    grupo.style.zIndex = String(10000 + by);
+    var el = document.createElement("button");
+    el.type = "button";
+    el.className = "maz-fuente";
+    el.style.left = (cx - sala.x - 36) + "px";
+    el.style.top = (by - sala.y - 72) + "px";
+    el.style.zIndex = String(10000 + by);
+    el.setAttribute("aria-label", sala.nombre);
     var halo = spriteEl("lanz/halo", 1.5);
     if (halo) {
       halo.classList.add("maz-halo-brillo");
       halo.style.position = "absolute";
-      halo.style.left = (cx - sala.x - 36) + "px";
-      halo.style.top = (by - sala.y - 68) + "px";
-      grupo.appendChild(halo);
+      halo.style.left = "0";
+      halo.style.top = "4px";
+      el.appendChild(halo);
     }
     var fuente = spriteEl("lanz/fuente", 1.5);
     if (fuente) {
       fuente.style.position = "absolute";
-      fuente.style.left = (cx - sala.x - 24) + "px";
-      fuente.style.top = (by - sala.y - 72) + "px";
-      grupo.appendChild(fuente);
+      fuente.style.left = "12px";
+      fuente.style.top = "0";
+      el.appendChild(fuente);
     } else {
-      var s = document.createElement("span");
-      s.className = "maz-sprite";
-      s.style.left = (cx - sala.x - 32) + "px";
-      s.style.top = (by - sala.y - 64) + "px";
-      s.appendChild(spriteObjeto("cristal"));
-      grupo.appendChild(s);
+      respaldo(el, "cristal", 4, 8, 64, 64);
     }
-    return grupo;
+    el.addEventListener("click", function () { abrirPila(sala.nombre, apps, el); });
+    return el;
   }
 
   function elegirFuente(sala, sl) {
@@ -1363,12 +1382,12 @@
       var sl = sala.pts.slice();
       var fuente = elegirFuente(sala, sl);
       sl = sl.filter(function (p) { return p !== fuente; });
-      sec.appendChild(fuenteEl(sala, fuente));
+      sec.appendChild(fuenteEl(sala, fuente, sala.apps));
       var asg = asignar(sala.apps, sl, 6);
       sala.apps.forEach(function (app) {
         if (asg.mapa[app.id]) sec.appendChild(fragmentoEl(sala, app, asg.mapa[app.id][0], asg.mapa[app.id][1], nivel));
       });
-      if (asg.pila) sec.appendChild(pilaEl(sala, asg.resto, asg.pila[0], asg.pila[1], nivel, true));
+      if (asg.pila) sec.appendChild(pilaEl(sala, sala.apps, asg.resto.length, asg.pila[0], asg.pila[1], nivel, true));
     } else if (sala.fase === CFG.FASE_RECICLAJE) {
       var orden = ordenar(sala.apps);
       var vis = orden.slice(0, Math.min(6, orden.length));
@@ -1383,15 +1402,18 @@
       sala.apps.forEach(function (app) {
         if (normal.mapa[app.id]) sec.appendChild(objetoEl(sala, app, normal.mapa[app.id][0], normal.mapa[app.id][1], nivel));
       });
-      if (normal.pila) sec.appendChild(pilaEl(sala, normal.resto, normal.pila[0], normal.pila[1], nivel, false));
+      if (normal.pila) sec.appendChild(pilaEl(sala, sala.apps, normal.resto.length, normal.pila[0], normal.pila[1], nivel, false));
     }
     sec.appendChild(bestiaEl(sala, nivel));
     return sec;
   }
 
-  function escalaDe(ancho) {
-    if (!ancho || ancho >= 375) return 1;
-    return ancho / 375;
+  function escalaDe(ancho, altoLibre, altoMundo) {
+    var ew = ancho > 0 ? ancho / 375 : 1;
+    var eh = altoMundo > 0 && altoLibre > 8 ? altoLibre / altoMundo : 1;
+    var e = Math.min(ew, eh);
+    if (!(e > 0)) e = 1;
+    return e;
   }
 
   function dibujar(salas, nivel, ancho) {
@@ -1408,12 +1430,13 @@
       return;
     }
     var plan = preparar(salas, nivel);
-    var e = escalaDe(ancho);
+    var altoLibre = lienzoEl ? lienzoEl.clientHeight : 0;
+    var e = escalaDe(ancho, altoLibre, plan.alto);
     salasEl.style.width = "375px";
     salasEl.style.height = plan.alto + "px";
     salasEl.style.transform = "scale(" + e + ")";
     salasEl.style.transformOrigin = "top center";
-    escalaEl.style.height = Math.ceil(plan.alto * e) + "px";
+    escalaEl.style.height = Math.floor(plan.alto * e) + "px";
     for (var i = 0; i < plan.corr.segmentos.length; i++) {
       var pas = pasilloEl(plan.corr.segmentos[i], nivel);
       if (pas) salasEl.appendChild(pas);
@@ -1447,7 +1470,7 @@
       var ids = [];
       for (var j = 0; j < salas[i].apps.length; j++) {
         var app = salas[i].apps[j];
-        ids.push([app.id, app.href, app.nombre, app.estado, app.completadas, app.emoji, app.boton, app.descripcion].join("@"));
+        ids.push([app.id, app.href, app.nombre, app.estado, app.completadas, app.bloqueada ? "b" : "", app.emoji, app.boton, app.descripcion].join("@"));
       }
       partes.push(salas[i].fase + ":" + ids.join(","));
     }
@@ -1459,7 +1482,7 @@
     var salas = leerSalas();
     var nivel = nivelDe(finalizados(salas));
     aplicarNivel(nivel);
-    placa.textContent = CFG.TEXTOS.MAZMORRA + " · " + nivel.nombre;
+    if (placaTexto) placaTexto.textContent = CFG.TEXTOS.MAZMORRA + " · " + nivel.nombre;
     if (atlasEstado === "cargando") return;
     var ancho = (lienzoEl && lienzoEl.clientWidth) || window.innerWidth;
     var firma = firmaDe(salas, nivel, ancho);
@@ -1525,7 +1548,8 @@
   }
 
   function sincronizarPausa() {
-    var quieto = encendida && (document.hidden || !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches));
+    var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var quieto = encendida && (document.hidden || !enVista || reduce);
     document.documentElement.classList.toggle("maz-pausa", quieto);
   }
 
@@ -1595,6 +1619,12 @@
     var tx = document.createElement("span");
     tx.textContent = app.nombre;
     nodo.appendChild(tx);
+    if (app.bloqueada) {
+      var marca = document.createElement("span");
+      marca.className = "maz-marca";
+      marca.textContent = CFG.TEXTOS.BLOQUEADA;
+      nodo.appendChild(marca);
+    }
     li.appendChild(nodo);
     return li;
   }
@@ -1625,6 +1655,98 @@
     b.addEventListener("click", function () { cerrarDialogo(d); });
     acciones.appendChild(b);
     return acciones;
+  }
+
+  function slugDe(app) {
+    var id = String(app.id || "");
+    var corte = id.lastIndexOf("/");
+    var slug = corte >= 0 ? id.slice(corte + 1) : id;
+    if (CFG.APORTES[slug]) return slug;
+    var nom = String(app.nombre || "").toLowerCase();
+    if (CFG.APORTES[nom]) return nom;
+    return slug;
+  }
+
+  function aportesVisibles(statId) {
+    var salas = leerSalas();
+    var out = [];
+    var visto = {};
+    var i, j, k, app, lista;
+    for (i = 0; i < salas.length; i++) {
+      for (j = 0; j < salas[i].apps.length; j++) {
+        app = salas[i].apps[j];
+        var slug = slugDe(app);
+        if (visto[slug]) continue;
+        lista = CFG.APORTES[slug];
+        if (!lista) continue;
+        for (k = 0; k < lista.length; k++) {
+          if (lista[k].id !== statId) continue;
+          visto[slug] = true;
+          out.push({ nombre: app.nombre, aporte: lista[k].aporte });
+        }
+      }
+    }
+    return out;
+  }
+
+  function mostrarAportes(st) {
+    detalleTrono.replaceChildren();
+    var h = document.createElement("p");
+    h.className = "ajuste-ayuda";
+    h.textContent = st.nombre;
+    detalleTrono.appendChild(h);
+    var ul = document.createElement("ul");
+    ul.className = "maz-lista";
+    var items = aportesVisibles(st.id);
+    if (!items.length) {
+      var vacio = document.createElement("li");
+      vacio.className = "maz-fila";
+      vacio.textContent = CFG.TEXTOS.SIN_APORTE;
+      ul.appendChild(vacio);
+    }
+    for (var i = 0; i < items.length; i++) {
+      var li = document.createElement("li");
+      li.className = "maz-fila";
+      var nom = document.createElement("span");
+      nom.textContent = items[i].nombre;
+      var n = document.createElement("span");
+      n.className = "maz-marca";
+      n.textContent = String(items[i].aporte);
+      li.appendChild(nom);
+      li.appendChild(n);
+      ul.appendChild(li);
+    }
+    detalleTrono.appendChild(ul);
+  }
+
+  function abrirTrono(disparador) {
+    var cajaStats = dialogoTrono.querySelector(".maz-stats");
+    cajaStats.replaceChildren();
+    detalleTrono.replaceChildren();
+    for (var i = 0; i < CFG.STATS.length; i++) {
+      (function (st) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "maz-stat";
+        var nom = document.createElement("span");
+        nom.textContent = st.nombre;
+        var n = document.createElement("span");
+        n.textContent = st.nivel + "/" + CFG.NIVEL_MAX;
+        b.appendChild(nom);
+        b.appendChild(n);
+        b.addEventListener("click", function () { mostrarAportes(st); });
+        cajaStats.appendChild(b);
+      })(CFG.STATS[i]);
+    }
+    dialogoTrono._volver = disparador;
+    abrirDialogo(dialogoTrono);
+  }
+
+  function tronoSprite() {
+    return crearSvg(
+      '<g stroke="#171110" stroke-width="1.2"><rect x="-16" y="-18" width="6" height="28" fill="#4a2834"/><rect x="10" y="-18" width="6" height="28" fill="#4a2834"/><rect x="-12" y="-16" width="24" height="10" fill="#8a4a5c"/><rect x="-14" y="-6" width="28" height="14" fill="#6a3a4a"/><rect x="-10" y="8" width="6" height="8" fill="#3b3431"/><rect x="4" y="8" width="6" height="8" fill="#3b3431"/></g>',
+      "-20 -22 40 40"
+    );
   }
 
   function crearDialogos() {
@@ -1666,8 +1788,23 @@
     dialogoPila.addEventListener("close", function () {
       if (dialogoPila._volver && dialogoPila._volver.focus) dialogoPila._volver.focus();
     });
+    dialogoTrono = dialogobase("maz-trono-titulo");
+    var ht = document.createElement("h2");
+    ht.id = "maz-trono-titulo";
+    ht.textContent = CFG.TEXTOS.TRONO;
+    var stats = document.createElement("div");
+    stats.className = "maz-stats";
+    detalleTrono = document.createElement("div");
+    dialogoTrono.appendChild(ht);
+    dialogoTrono.appendChild(stats);
+    dialogoTrono.appendChild(detalleTrono);
+    dialogoTrono.appendChild(botonCerrar(dialogoTrono));
+    dialogoTrono.addEventListener("close", function () {
+      if (dialogoTrono._volver && dialogoTrono._volver.focus) dialogoTrono._volver.focus();
+    });
     document.body.appendChild(dialogoAjustes);
     document.body.appendChild(dialogoPila);
+    document.body.appendChild(dialogoTrono);
   }
 
   function montarBoton() {
@@ -1692,6 +1829,16 @@
     raiz.className = "mazmorra";
     placa = document.createElement("p");
     placa.className = "maz-placa";
+    var trono = document.createElement("button");
+    trono.type = "button";
+    trono.className = "maz-trono";
+    trono.setAttribute("aria-label", CFG.TEXTOS.TRONO);
+    trono.appendChild(tronoSprite());
+    trono.addEventListener("click", function () { abrirTrono(trono); });
+    placaTexto = document.createElement("span");
+    placaTexto.className = "maz-placa-texto";
+    placa.appendChild(trono);
+    placa.appendChild(placaTexto);
     lienzoEl = document.createElement("div");
     lienzoEl.className = "maz-lienzo";
     escalaEl = document.createElement("div");
@@ -1706,6 +1853,13 @@
     if (window.ResizeObserver) {
       observador = new ResizeObserver(alResize);
       observador.observe(lienzoEl);
+    }
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function (ents) {
+        enVista = false;
+        for (var i = 0; i < ents.length; i++) if (ents[i].isIntersecting) enVista = true;
+        sincronizarPausa();
+      }).observe(lienzoEl);
     }
   }
 
