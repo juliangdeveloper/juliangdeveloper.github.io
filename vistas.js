@@ -269,15 +269,51 @@
     e.stopPropagation();
   }
 
+  function slugDeTarjeta(card) {
+    var s = card.getAttribute("data-app") || "";
+    if (s) return s;
+    var id = card.getAttribute("data-id") || "";
+    var corte = id.lastIndexOf("/");
+    return corte >= 0 ? id.slice(corte + 1) : id;
+  }
+
+  function nombreDeTarjeta(card) {
+    var h3 = card.querySelector("h3");
+    if (!h3) return "";
+    var c = h3.cloneNode(true);
+    var ocultos = c.querySelectorAll('[aria-hidden="true"]');
+    for (var i = 0; i < ocultos.length; i++) ocultos[i].remove();
+    return c.textContent.replace(/\s+/g, " ").trim();
+  }
+
+  function avisarFalta(card) {
+    var btn = card.querySelector("a.btn");
+    document.dispatchEvent(new CustomEvent("portafolio:falta", {
+      detail: {
+        slug: slugDeTarjeta(card),
+        nombre: nombreDeTarjeta(card),
+        href: btn ? btn.href : ""
+      }
+    }));
+  }
+
   function alClick(e) {
     if (e.defaultPrevented || e.button) return;
-    if (e.target.closest(".dejar, .aviso, .hoja, .agregar, .restaurar, .velo, .cerrar, .links a")) return;
+    if (e.target.closest(".dejar, .aviso, .hoja, .agregar, .restaurar, .velo, .cerrar")) return;
     var card = e.target.closest(".card");
+    if (e.target.closest(".links a")) {
+      if (!card || card.getAttribute("data-proyecto")) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      avisarFalta(card);
+      return;
+    }
     if (!card || card.classList.contains("abierta")) return;
     if (e.target.closest("a[href]") && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return;
     var sel = window.getSelection ? window.getSelection() : null;
     if (sel && !sel.isCollapsed && card.contains(sel.anchorNode)) return;
     e.preventDefault();
+    if (!card.getAttribute("data-proyecto")) { avisarFalta(card); return; }
     abrir(card);
   }
 
@@ -304,6 +340,7 @@
     if (e.key !== "Enter" && e.key !== " ") return;
     if (e.target && e.target.classList && e.target.classList.contains("card") && !e.target.classList.contains("abierta")) {
       e.preventDefault();
+      if (!e.target.getAttribute("data-proyecto")) { avisarFalta(e.target); return; }
       abrir(e.target);
     }
   }

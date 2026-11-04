@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  var FASES = ["Idea", "Definición", "Diseño", "Construcción", "Validación", "Lanzamiento"];
+  var FASES = ["Planeación", "Definición", "Diseño", "Construcción", "Validación", "Lanzamiento"];
   var ESTADOS = ["Pendiente", "En curso", "En pausa", "En revisión", "Completada"];
   var TOTAL = 6;
   var MAX_OBJETIVO = 140;
@@ -19,16 +19,27 @@
     return t;
   }
 
+  function numero(n) {
+    if (typeof n === "number" && isFinite(n)) return n;
+    if (typeof n === "string" && /^-?\d+$/.test(n.trim())) return Number(n);
+    return null;
+  }
+
   function leerProyecto(record, slug) {
     if (!record || typeof record !== "object" || Array.isArray(record)) return null;
-    if (record.v !== 1 || record.slug !== slug) return null;
+    if (typeof record.slug === "string" && record.slug !== slug) return null;
     var p = record.proyecto;
     if (!p || typeof p !== "object" || Array.isArray(p)) return null;
-    if (!entero(p.fase, 1, 7) || !entero(p.fase_estado, 0, 4) || !entero(p.fases_completadas, 0, TOTAL)) return null;
+    var fase = numero(p.fase);
+    if (!entero(fase, 1, 7)) return null;
+    var estado = numero(p.fase_estado);
+    if (!entero(estado, 0, 4)) estado = 0;
+    var comp = numero(p.fases_completadas);
+    if (!entero(comp, 0, TOTAL)) comp = 0;
     return {
-      fase: p.fase,
-      estado: p.fase_estado,
-      completadas: p.fases_completadas,
+      fase: fase,
+      estado: estado,
+      completadas: comp,
       objetivo: limpiarTexto(p.objetivo)
     };
   }
@@ -89,7 +100,7 @@
 
   function ubicar(card, info) {
     if (card.classList.contains("abierta")) return;
-    var fase = info && info.fase >= 1 && info.fase <= 7 ? String(info.fase) : "0";
+    var fase = info && info.fase >= 1 && info.fase <= 7 ? String(info.fase) : "1";
     var grid = document.querySelector('.fase[data-fase="' + fase + '"] .grid');
     if (grid && card.parentNode !== grid) grid.appendChild(card);
   }

@@ -303,7 +303,7 @@
     var lista = cargar();
     var fijos = Array.prototype.slice.call(document.querySelectorAll("li.card[data-fijo]"));
     Object.keys(grids).forEach(function (g) { grids[g].replaceChildren(); });
-    var base = grids["0"];
+    var base = grids["1"];
     lista.forEach(function (item) {
       var d = POR_ID[item.id];
       var li = d ? d.nodo.cloneNode(true) : tarjetaAgregada(item);

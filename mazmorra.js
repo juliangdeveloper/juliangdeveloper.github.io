@@ -50,6 +50,12 @@
   var atlasCss = "";
   var atlasEstado = "cargando";
   var placaCache = {};
+  var tronoPagina = 0;
+  var tronoDetallePagina = 0;
+  var tronoStat = "";
+  var tronoStatsEl = null;
+  var tronoPaginasEl = null;
+  var tronoDetallePaginasEl = null;
 
   var COLORES = {
     b: "#bfe8f0",
@@ -673,7 +679,8 @@
       estado: estado,
       completadas: comp,
       bloqueada: extra.bloqueada,
-      aportes: extra.aportes
+      aportes: extra.aportes,
+      sinMeta: !card.getAttribute("data-proyecto")
     };
   }
 
@@ -689,16 +696,28 @@
     try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
-  function idStat(s) {
+  function nombreVisible(s) {
     if (typeof s !== "string") return "";
-    var t = s.trim().toLowerCase();
-    if (t.length < 1 || t.length > CFG.STAT_ID_MAX) return "";
-    if (!/^[a-z0-9][a-z0-9_-]*$/.test(t)) return "";
+    var t = s.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g, "");
+    t = t.replace(/^\s+|\s+$/g, "");
+    if (!t || Array.from(t).length > CFG.STAT_NOMBRE_MAX) return "";
     return t;
   }
 
   function fuenteDe(s) {
     return s === "creacion" || s === "uso" ? s : "";
+  }
+
+  function expDe(it) {
+    if (entero(it.exp, 1, CFG.EXP_MAX)) return it.exp;
+    if (entero(it.aporte, 1, CFG.EXP_MAX)) return it.aporte;
+    return 0;
+  }
+
+  function statDe(it) {
+    var n = nombreVisible(it.stat);
+    if (n) return n;
+    return nombreVisible(it.id);
   }
 
   function aportesDe(lista) {
@@ -707,25 +726,34 @@
     var orden = [];
     for (var j = 0; j < lista.length; j++) {
       var it = lista[j];
-      if (!it || typeof it !== "object") continue;
-      var id = idStat(it.id);
-      if (!id || !entero(it.aporte, 1, CFG.APORTE_MAX)) continue;
+      if (!it || typeof it !== "object" || Array.isArray(it)) continue;
+      var stat = statDe(it);
+      var exp = expDe(it);
       var fuente = fuenteDe(it.fuente);
-      var clave = id + "|" + fuente;
+      if (!stat || !exp || !fuente) continue;
+      var clave = stat + "\n" + fuente;
       if (!mapa[clave]) {
-        mapa[clave] = { id: id, aporte: 0, fuente: fuente };
+        mapa[clave] = { stat: stat, exp: 0, fuente: fuente };
         orden.push(clave);
       }
-      mapa[clave].aporte += it.aporte;
+      mapa[clave].exp += exp;
     }
     var out = [];
     for (var i = 0; i < orden.length; i++) out.push(mapa[orden[i]]);
     return out;
   }
 
-  function extrasMeta(slug) {
+  function proyectoDeMeta(slug) {
     var rec = metaCruda(slug);
-    var p = rec && rec.v === 1 && rec.slug === slug && rec.proyecto && typeof rec.proyecto === "object" && !Array.isArray(rec.proyecto) ? rec.proyecto : null;
+    if (!rec || typeof rec !== "object" || Array.isArray(rec)) return null;
+    if (typeof rec.slug === "string" && rec.slug !== slug) return null;
+    var p = rec.proyecto;
+    if (!p || typeof p !== "object" || Array.isArray(p)) return null;
+    return p;
+  }
+
+  function extrasMeta(slug) {
+    var p = proyectoDeMeta(slug);
     if (!p) return { bloqueada: false, aportes: [] };
     return { bloqueada: p.bloqueada === true, aportes: aportesDe(p.aportes) };
   }
@@ -1126,6 +1154,15 @@
     el.appendChild(c);
   }
 
+  function vigilarFalta(el, app) {
+    if (!app || !app.sinMeta || !el || el.tagName !== "A") return;
+    el.addEventListener("click", function (e) {
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      pedirFalta(app);
+    });
+  }
+
   function objetoEl(sala, app, cx, by, nivel) {
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
@@ -1159,6 +1196,7 @@
     }
     if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
+    vigilarFalta(el, app);
     return el;
   }
 
@@ -1181,6 +1219,7 @@
     } else respaldo(el, "cristal", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
+    vigilarFalta(el, app);
     return el;
   }
 
@@ -1212,6 +1251,7 @@
     } else respaldo(el, "caja", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
+    vigilarFalta(el, app);
     return el;
   }
 
@@ -1554,8 +1594,8 @@
       for (var j = 0; j < salas[i].apps.length; j++) {
         var app = salas[i].apps[j];
         var ap = [];
-        for (var k = 0; k < (app.aportes || []).length; k++) ap.push(app.aportes[k].id + ":" + app.aportes[k].fuente + ":" + app.aportes[k].aporte);
-        ids.push([app.id, app.href, app.nombre, app.estado, app.completadas, app.bloqueada ? "b" : "", ap.join("+"), app.emoji, app.boton, app.descripcion].join("@"));
+        for (var k = 0; k < (app.aportes || []).length; k++) ap.push(app.aportes[k].stat + ":" + app.aportes[k].fuente + ":" + app.aportes[k].exp);
+        ids.push([app.id, app.href, app.nombre, app.estado, app.completadas, app.bloqueada ? "b" : "", app.sinMeta ? "s" : "", ap.join("+"), app.emoji, app.boton, app.descripcion].join("@"));
       }
       partes.push(salas[i].fase + ":" + ids.join(","));
     }
@@ -1619,6 +1659,7 @@
       atlasCss = "url(\"" + atlasImg.src + "\")";
       atlasEstado = "listo";
       if (encendida) pintar(true);
+      if (dialogoTrono && dialogoTrono.open) pintarTrono();
     }).catch(function () {
       atlas = null;
       atlasImg = null;
@@ -1700,6 +1741,89 @@
     else d.removeAttribute("open");
   }
 
+  var dialogoFalta = null;
+  var faltaTitulo = null;
+  var faltaAviso = null;
+  var faltaHref = "";
+  var faltaSlug = "";
+
+  function promptDe(slug) {
+    var fases = [];
+    var estados = [];
+    var i;
+    for (i = 1; i < CFG.FASES.length; i++) fases.push(i + " " + CFG.FASES[i]);
+    for (i = 0; i < CFG.ESTADOS.length; i++) estados.push(i + " " + CFG.ESTADOS[i]);
+    var ejemplo = {
+      v: 1,
+      slug: slug,
+      proyecto: {
+        fase: 1,
+        fase_estado: 1,
+        fases_completadas: 0,
+        objetivo: "Para qué existe esta app, en una frase.",
+        bloqueada: false,
+        aportes: [
+          { stat: "Claridad", exp: 2, fuente: "creacion" },
+          { stat: "Constancia", exp: 1, fuente: "uso" }
+        ]
+      }
+    };
+    return [
+      "Haz que esta app guarde su información para el portafolio.",
+      "",
+      "Al cargar, en el origen " + CFG.ORIGEN + ", escribe en localStorage la clave " + CFG.CLAVE_META + slug + " con un JSON como este. Cambia la fase, el estado, las fases completadas, el objetivo, bloqueada y los stats por los de esta app. Claridad y Constancia solo muestran cómo se escribe un nombre.",
+      "",
+      JSON.stringify(ejemplo, null, 2),
+      "",
+      "El portafolio lee así:",
+      "- v es 1 y slug es " + slug + ". Si el slug no coincide con la tarjeta, no usa el registro.",
+      "- proyecto.fase es un entero de 1 a " + (CFG.FASES.length - 1) + ", o ese mismo número en texto: " + fases.join(", ") + ".",
+      "- proyecto.fase_estado es un entero de 0 a " + CFG.ESTADO_MAX + ": " + estados.join(", ") + ". Si falta o no se puede leer, usa 0.",
+      "- proyecto.fases_completadas es un entero de 0 a " + CFG.COMPLETADAS_MAX + ". Si falta o no se puede leer, usa 0.",
+      "- proyecto.objetivo es un texto corto. Si no es texto, se omite.",
+      "- proyecto.bloqueada es true cuando la app está bloqueada.",
+      "- proyecto.aportes es una lista. Cada entrada es {stat, exp, fuente}: stat es el nombre visible, sin cambiar mayúsculas ni signos; exp es un entero de 1 a " + CFG.EXP_MAX + "; fuente es creacion o uso. Una entrada inválida se ignora. También vale {id, aporte, fuente}: id se muestra tal cual como nombre y aporte cuenta como exp.",
+      "- Los stats con el mismo nombre exacto se suman.",
+      "- Escríbela al cargar, sin esperar otra acción.",
+      "",
+      "En el mismo cambio sube la versión y actualiza el README. No agregues comentarios en el código."
+    ].join("\n");
+  }
+
+  function copiarTexto(texto) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(texto).catch(function () { return copiarPlano(texto); });
+    }
+    return copiarPlano(texto);
+  }
+
+  function copiarPlano(texto) {
+    return new Promise(function (ok, mal) {
+      var ta = document.createElement("textarea");
+      ta.value = texto;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      var bien = false;
+      try { bien = document.execCommand("copy"); } catch (e) { bien = false; }
+      ta.remove();
+      if (bien) ok();
+      else mal();
+    });
+  }
+
+  function pedirFalta(app) {
+    if (!dialogoFalta || !app) return;
+    faltaHref = app.href || "";
+    faltaSlug = app.slug || "";
+    faltaTitulo.textContent = app.nombre || CFG.TEXTOS.FALTA;
+    faltaAviso.hidden = true;
+    dialogoFalta.classList.toggle("maz-pixel", document.documentElement.classList.contains("mazmorra"));
+    abrirDialogo(dialogoFalta);
+  }
+
   function filaPila(app) {
     var li = document.createElement("li");
     var nodo = app.href ? document.createElement("a") : document.createElement("span");
@@ -1717,6 +1841,7 @@
       nodo.appendChild(marca);
     }
     li.appendChild(nodo);
+    vigilarFalta(nodo, app);
     return li;
   }
 
@@ -1748,93 +1873,78 @@
     return acciones;
   }
 
-  function catalogoStats() {
-    return Array.isArray(CFG.STATS) ? CFG.STATS : [];
-  }
-
-  function nombreStat(id) {
-    var lista = catalogoStats();
-    var i;
-    for (i = 0; i < lista.length; i++) {
-      if (lista[i] && lista[i].id === id && lista[i].nombre) return lista[i].nombre;
-    }
-    var partes = String(id || "").split(/[_-]+/);
-    for (i = 0; i < partes.length; i++) {
-      if (!partes[i]) continue;
-      partes[i] = partes[i].charAt(0).toUpperCase() + partes[i].slice(1);
-    }
-    return partes.join(" ");
-  }
-
-  function nivelBase(id) {
-    var lista = catalogoStats();
-    for (var i = 0; i < lista.length; i++) {
-      if (!lista[i] || lista[i].id !== id) continue;
-      return entero(lista[i].nivel, 0, CFG.NIVEL_MAX) ? lista[i].nivel : 0;
-    }
-    return 0;
-  }
-
-  function tieneNivel(id) {
-    var lista = catalogoStats();
-    for (var i = 0; i < lista.length; i++) {
-      if (lista[i] && lista[i].id === id && entero(lista[i].nivel, 0, CFG.NIVEL_MAX)) return true;
-    }
-    return false;
-  }
-
   function statsVisibles(salas) {
-    var reportados = {};
-    var i, j, k, lista;
+    var mapa = {};
+    var orden = [];
+    var i, j, k, lista, stat;
     for (i = 0; i < salas.length; i++) {
       for (j = 0; j < salas[i].apps.length; j++) {
         lista = salas[i].apps[j].aportes || [];
-        for (k = 0; k < lista.length; k++) if (lista[k] && lista[k].id) reportados[lista[k].id] = true;
+        for (k = 0; k < lista.length; k++) {
+          if (!lista[k] || !lista[k].stat) continue;
+          stat = lista[k].stat;
+          if (!mapa[stat]) {
+            mapa[stat] = { stat: stat, exp: 0 };
+            orden.push(stat);
+          }
+          mapa[stat].exp += lista[k].exp;
+        }
       }
     }
-    var conocidos = {};
-    var catalogo = catalogoStats();
     var out = [];
-    for (i = 0; i < catalogo.length; i++) {
-      if (!catalogo[i] || !catalogo[i].id) continue;
-      var id = catalogo[i].id;
-      conocidos[id] = true;
-      if (!tieneNivel(id) && !reportados[id]) continue;
-      out.push({ id: id, nombre: catalogo[i].nombre || nombreStat(id), nivel: nivelBase(id) });
-    }
-    var extra = Object.keys(reportados).filter(function (sid) { return !conocidos[sid]; }).sort();
-    for (i = 0; i < extra.length; i++) out.push({ id: extra[i], nombre: nombreStat(extra[i]), nivel: nivelBase(extra[i]) });
+    for (i = 0; i < orden.length; i++) out.push(mapa[orden[i]]);
     return out;
   }
 
-  function aportesVisibles(statId) {
+  function aportesVisibles(stat) {
     var salas = leerSalas();
-    var out = [];
-    var visto = {};
-    var i, j, k, app;
+    var mapa = {};
+    var orden = [];
+    var i, j, k, app, lista, clave;
     for (i = 0; i < salas.length; i++) {
       for (j = 0; j < salas[i].apps.length; j++) {
         app = salas[i].apps[j];
-        var clave = app.slug || app.id;
-        if (visto[clave]) continue;
-        var lista = app.aportes || [];
-        var creacion = 0;
-        var uso = 0;
-        var suelto = 0;
-        var toca = false;
+        lista = app.aportes || [];
         for (k = 0; k < lista.length; k++) {
-          if (lista[k].id !== statId) continue;
-          toca = true;
-          if (lista[k].fuente === "creacion") creacion += lista[k].aporte;
-          else if (lista[k].fuente === "uso") uso += lista[k].aporte;
-          else suelto += lista[k].aporte;
+          if (!lista[k] || lista[k].stat !== stat) continue;
+          clave = (app.slug || app.id) + "\n" + lista[k].fuente;
+          if (!mapa[clave]) {
+            mapa[clave] = { nombre: app.nombre, fuente: lista[k].fuente, exp: 0 };
+            orden.push(clave);
+          }
+          mapa[clave].exp += lista[k].exp;
         }
-        if (!toca) continue;
-        visto[clave] = true;
-        out.push({ nombre: app.nombre, creacion: creacion, uso: uso, suelto: suelto });
       }
     }
+    var out = [];
+    for (i = 0; i < orden.length; i++) out.push(mapa[orden[i]]);
     return out;
+  }
+
+  function cupoTrono() {
+    var movil = window.innerWidth <= CFG.ANCHO_MOVIL;
+    return {
+      stats: movil ? CFG.TRONO_STATS_MOVIL : CFG.TRONO_STATS_ANCHO,
+      detalle: movil ? CFG.TRONO_DETALLE_MOVIL : CFG.TRONO_DETALLE_ANCHO
+    };
+  }
+
+  function placaTrono(w, h) {
+    var nivel = document.documentElement.getAttribute("data-nivel") || "ceniza";
+    return fondoNueve("placa/" + nivel + "-9s", w, h) || fondoNueve("placa/ceniza-9s", w, h);
+  }
+
+  function aplicarPlaca(el, w, h) {
+    var url = placaTrono(w, h);
+    if (url) el.style.backgroundImage = "url(" + url + ")";
+  }
+
+  function paginaDe(total, cupo, actual) {
+    var paginas = Math.max(1, Math.ceil(total / cupo));
+    var n = actual;
+    if (n >= paginas) n = paginas - 1;
+    if (n < 0) n = 0;
+    return { paginas: paginas, n: n, desde: n * cupo };
   }
 
   function textoFaltan(n) {
@@ -1884,72 +1994,130 @@
     ajustarHoja(dialogoNiveles);
   }
 
-  function mostrarAportes(st) {
-    detalleTrono.replaceChildren();
-    var h = document.createElement("p");
-    h.className = "ajuste-ayuda";
-    h.textContent = st.nombre;
-    detalleTrono.appendChild(h);
-    var ul = document.createElement("ul");
-    ul.className = "maz-lista";
-    var items = aportesVisibles(st.id);
-    if (!items.length) {
-      var vacio = document.createElement("li");
-      vacio.className = "maz-fila";
-      vacio.textContent = CFG.TEXTOS.SIN_APORTE;
-      ul.appendChild(vacio);
-    }
-    for (var i = 0; i < items.length; i++) {
-      var li = document.createElement("li");
-      li.className = "maz-fila";
-      var nom = document.createElement("span");
-      nom.textContent = items[i].nombre;
-      var n = document.createElement("span");
-      n.className = "maz-marca";
-      var partes = [];
-      if (items[i].creacion) partes.push(CFG.TEXTOS.CREACION + " " + items[i].creacion);
-      if (items[i].uso) partes.push(CFG.TEXTOS.USO + " " + items[i].uso);
-      if (items[i].suelto) partes.push(String(items[i].suelto));
-      n.textContent = partes.join(" · ");
-      li.appendChild(nom);
-      li.appendChild(n);
-      ul.appendChild(li);
-    }
-    detalleTrono.appendChild(ul);
-    if (dialogoTrono && dialogoTrono.hasAttribute("open")) ajustarHoja(dialogoTrono);
+  function filaPagina(caja, n, paginas, ir) {
+    caja.replaceChildren();
+    caja.hidden = paginas < 2;
+    if (paginas < 2) return;
+    var prev = document.createElement("button");
+    prev.type = "button";
+    prev.className = "maz-paso";
+    prev.textContent = CFG.TEXTOS.ANTERIOR;
+    prev.disabled = n <= 0;
+    prev.addEventListener("click", function () { ir(n - 1); });
+    var marca = document.createElement("span");
+    marca.className = "maz-pagina-n";
+    marca.textContent = (n + 1) + " / " + paginas;
+    var next = document.createElement("button");
+    next.type = "button";
+    next.className = "maz-paso";
+    next.textContent = CFG.TEXTOS.SIGUIENTE;
+    next.disabled = n >= paginas - 1;
+    next.addEventListener("click", function () { ir(n + 1); });
+    caja.appendChild(prev);
+    caja.appendChild(marca);
+    caja.appendChild(next);
   }
 
-  function abrirTrono(disparador) {
-    var cajaStats = dialogoTrono.querySelector(".maz-stats");
-    cajaStats.replaceChildren();
-    detalleTrono.replaceChildren();
-    var visibles = statsVisibles(leerSalas());
-    if (!visibles.length) {
+  function filaExp(nombre, fuente, exp) {
+    var li = document.createElement("li");
+    li.className = "maz-fila maz-aporte";
+    aplicarPlaca(li, 240, CFG.TRONO_DETALLE_FILA);
+    var nom = document.createElement("span");
+    nom.className = "maz-aporte-nombre";
+    nom.textContent = nombre;
+    var via = document.createElement("span");
+    via.className = "maz-aporte-via";
+    via.textContent = fuente === "creacion" ? CFG.TEXTOS.CREACION : CFG.TEXTOS.USO;
+    var n = document.createElement("span");
+    n.className = "maz-exp";
+    n.textContent = String(exp);
+    var et = fondoNueve("pila/etiqueta-9s", 36, 18);
+    if (et) n.style.backgroundImage = "url(" + et + ")";
+    li.appendChild(nom);
+    li.appendChild(via);
+    li.appendChild(n);
+    return li;
+  }
+
+  function pintarTrono() {
+    if (!tronoStatsEl || !detalleTrono) return;
+    var stats = statsVisibles(leerSalas());
+    var cupo = cupoTrono();
+    var pag = paginaDe(stats.length, cupo.stats, tronoPagina);
+    tronoPagina = pag.n;
+    var hay = false;
+    var i;
+    for (i = 0; i < stats.length; i++) if (stats[i].stat === tronoStat) hay = true;
+    if (!hay) tronoStat = "";
+    tronoStatsEl.replaceChildren();
+    if (!stats.length) {
       var vacio = document.createElement("p");
-      vacio.className = "ajuste-ayuda";
+      vacio.className = "maz-vacio-trono";
       vacio.textContent = CFG.TEXTOS.SIN_APORTE;
-      cajaStats.appendChild(vacio);
+      tronoStatsEl.appendChild(vacio);
     }
-    for (var i = 0; i < visibles.length; i++) {
+    var hasta = Math.min(stats.length, pag.desde + cupo.stats);
+    for (i = pag.desde; i < hasta; i++) {
       (function (st) {
         var b = document.createElement("button");
         b.type = "button";
         b.className = "maz-stat";
+        if (st.stat === tronoStat) b.classList.add("maz-stat-activa");
+        b.setAttribute("aria-pressed", st.stat === tronoStat ? "true" : "false");
+        aplicarPlaca(b, 240, CFG.TRONO_FILA);
         var nom = document.createElement("span");
-        nom.textContent = st.nombre;
+        nom.className = "maz-stat-nombre";
+        nom.textContent = st.stat;
+        var n = document.createElement("span");
+        n.className = "maz-exp";
+        n.textContent = st.exp + " " + CFG.TEXTOS.EXP;
+        var et = fondoNueve("pila/etiqueta-9s", 72, 18);
+        if (et) n.style.backgroundImage = "url(" + et + ")";
         b.appendChild(nom);
-        if (tieneNivel(st.id)) {
-          var n = document.createElement("span");
-          n.textContent = st.nivel + "/" + CFG.NIVEL_MAX;
-          b.appendChild(n);
-        }
-        b.addEventListener("click", function () { mostrarAportes(st); });
-        cajaStats.appendChild(b);
-      })(visibles[i]);
+        b.appendChild(n);
+        b.addEventListener("click", function () {
+          tronoStat = st.stat;
+          tronoDetallePagina = 0;
+          pintarTrono();
+        });
+        tronoStatsEl.appendChild(b);
+      })(stats[i]);
     }
+    filaPagina(tronoPaginasEl, tronoPagina, pag.paginas, function (n) {
+      tronoPagina = n;
+      pintarTrono();
+    });
+    detalleTrono.replaceChildren();
+    if (tronoStat) {
+      var items = aportesVisibles(tronoStat);
+      var det = paginaDe(items.length, cupo.detalle, tronoDetallePagina);
+      tronoDetallePagina = det.n;
+      var h = document.createElement("p");
+      h.className = "maz-detalle-titulo";
+      h.textContent = tronoStat;
+      detalleTrono.appendChild(h);
+      var ul = document.createElement("ul");
+      ul.className = "maz-lista";
+      var fin = Math.min(items.length, det.desde + cupo.detalle);
+      for (i = det.desde; i < fin; i++) ul.appendChild(filaExp(items[i].nombre, items[i].fuente, items[i].exp));
+      detalleTrono.appendChild(ul);
+      filaPagina(tronoDetallePaginasEl, tronoDetallePagina, det.paginas, function (n) {
+        tronoDetallePagina = n;
+        pintarTrono();
+      });
+    } else if (tronoDetallePaginasEl) {
+      tronoDetallePaginasEl.hidden = true;
+      tronoDetallePaginasEl.replaceChildren();
+    }
+  }
+
+  function abrirTrono(disparador) {
+    tronoPagina = 0;
+    tronoDetallePagina = 0;
+    tronoStat = "";
     dialogoTrono._volver = disparador;
+    pintarTrono();
     abrirDialogo(dialogoTrono);
-    ajustarHoja(dialogoTrono);
   }
 
   function crearDialogos() {
@@ -1992,17 +2160,33 @@
       if (dialogoPila._volver && dialogoPila._volver.focus) dialogoPila._volver.focus();
     });
     dialogoTrono = dialogobase("maz-trono-titulo");
-    dialogoTrono.classList.add("maz-hoja-fit");
+    dialogoTrono.classList.add("maz-hoja-fit", "maz-trono-panel");
+    var cabeza = document.createElement("div");
+    cabeza.className = "maz-trono-cabeza";
+    var marca = document.createElement("span");
+    marca.className = "maz-trono-marca";
+    marca.setAttribute("aria-hidden", "true");
+    marca.style.backgroundImage = "url(\"img/mazmorra/trono.png?v=" + CFG.VERSION + "\")";
     var ht = document.createElement("h2");
     ht.id = "maz-trono-titulo";
     ht.textContent = CFG.TEXTOS.TRONO;
-    var stats = document.createElement("div");
-    stats.className = "maz-stats";
+    cabeza.appendChild(marca);
+    cabeza.appendChild(ht);
+    tronoStatsEl = document.createElement("div");
+    tronoStatsEl.className = "maz-stats";
+    tronoPaginasEl = document.createElement("div");
+    tronoPaginasEl.className = "maz-pagina";
+    tronoPaginasEl.hidden = true;
     detalleTrono = document.createElement("div");
     detalleTrono.className = "maz-detalle";
-    dialogoTrono.appendChild(ht);
-    dialogoTrono.appendChild(stats);
+    tronoDetallePaginasEl = document.createElement("div");
+    tronoDetallePaginasEl.className = "maz-pagina";
+    tronoDetallePaginasEl.hidden = true;
+    dialogoTrono.appendChild(cabeza);
+    dialogoTrono.appendChild(tronoStatsEl);
+    dialogoTrono.appendChild(tronoPaginasEl);
     dialogoTrono.appendChild(detalleTrono);
+    dialogoTrono.appendChild(tronoDetallePaginasEl);
     dialogoTrono.appendChild(botonCerrar(dialogoTrono));
     dialogoTrono.addEventListener("close", function () {
       if (dialogoTrono._volver && dialogoTrono._volver.focus) dialogoTrono._volver.focus();
@@ -2019,10 +2203,52 @@
     dialogoNiveles.addEventListener("close", function () {
       if (dialogoNiveles._volver && dialogoNiveles._volver.focus) dialogoNiveles._volver.focus();
     });
+    dialogoFalta = dialogobase("maz-falta-titulo");
+    dialogoFalta.classList.add("maz-falta");
+    faltaTitulo = document.createElement("h2");
+    faltaTitulo.id = "maz-falta-titulo";
+    var faltaTexto = document.createElement("p");
+    faltaTexto.className = "maz-falta-texto";
+    faltaTexto.textContent = CFG.TEXTOS.FALTA;
+    var accionesFalta = document.createElement("div");
+    accionesFalta.className = "hoja-acciones";
+    var copiar = document.createElement("button");
+    copiar.type = "button";
+    copiar.className = "sec";
+    copiar.textContent = CFG.TEXTOS.COPIAR;
+    var hecho = document.createElement("button");
+    hecho.type = "button";
+    hecho.className = "btn";
+    hecho.textContent = CFG.TEXTOS.HECHO;
+    faltaAviso = document.createElement("p");
+    faltaAviso.className = "maz-falta-ok";
+    faltaAviso.setAttribute("role", "status");
+    faltaAviso.hidden = true;
+    accionesFalta.appendChild(copiar);
+    accionesFalta.appendChild(hecho);
+    dialogoFalta.appendChild(faltaTitulo);
+    dialogoFalta.appendChild(faltaTexto);
+    dialogoFalta.appendChild(accionesFalta);
+    dialogoFalta.appendChild(faltaAviso);
+    copiar.addEventListener("click", function () {
+      copiarTexto(promptDe(faltaSlug)).then(function () {
+        faltaAviso.textContent = CFG.TEXTOS.COPIADO;
+        faltaAviso.hidden = false;
+      }, function () {});
+    });
+    hecho.addEventListener("click", function () {
+      var href = faltaHref;
+      cerrarDialogo(dialogoFalta);
+      if (href) window.location.assign(href);
+    });
     document.body.appendChild(dialogoAjustes);
     document.body.appendChild(dialogoPila);
     document.body.appendChild(dialogoTrono);
     document.body.appendChild(dialogoNiveles);
+    document.body.appendChild(dialogoFalta);
+    document.addEventListener("portafolio:falta", function (e) {
+      pedirFalta(e.detail || {});
+    });
   }
 
   function montarBoton() {
