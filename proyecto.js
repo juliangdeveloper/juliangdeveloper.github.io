@@ -6,38 +6,6 @@
   var MAX_OBJETIVO = 140;
   var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
   var PREFIX = "meta.v1.";
-  var SEMILLAS = {
-    "piano-transcribe": {
-      v: 1,
-      slug: "piano-transcribe",
-      proyecto: {
-        fase: 6,
-        fase_estado: 1,
-        fases_completadas: 5,
-        objetivo: "Motor open source de captura y escritura musical, mantenido por la comunidad"
-      }
-    },
-    "diff-review": {
-      v: 1,
-      slug: "diff-review",
-      proyecto: {
-        fase: 4,
-        fase_estado: 1,
-        fases_completadas: 3,
-        objetivo: "Open source para revisar diffs de commits en el celular y aprobar, rechazar o comentar."
-      }
-    },
-    "pose-engine": {
-      v: 1,
-      slug: "pose-engine",
-      proyecto: {
-        fase: 4,
-        fase_estado: 1,
-        fases_completadas: 3,
-        objetivo: "Motor open source de estimación de pose en tiempo real, en el dispositivo, para juegos y apps de ejercicio."
-      }
-    }
-  };
 
   function entero(n, lo, hi) {
     return typeof n === "number" && isFinite(n) && Math.floor(n) === n && n >= lo && n <= hi;
@@ -171,15 +139,8 @@
     return out;
   }
 
-  function sinRegistro(slug) {
-    try { return window.localStorage.getItem(PREFIX + slug) === null; } catch (e) { return true; }
-  }
-
   function leerInfo(slug) {
-    var info = leerProyecto(leerRegistro(slug), slug);
-    if (info || !sinRegistro(slug)) return info;
-    if (!Object.prototype.hasOwnProperty.call(SEMILLAS, slug)) return null;
-    return leerProyecto(SEMILLAS[slug], slug);
+    return leerProyecto(leerRegistro(slug), slug);
   }
 
   function refrescar(slug) {

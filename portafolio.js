@@ -54,7 +54,7 @@
 
   function leerDefaults() {
     var out = [];
-    var cards = document.querySelectorAll("main section .grid > li.card[data-app]");
+    var cards = document.querySelectorAll("main section .grid > li.card[data-app]:not([data-fijo])");
     for (var i = 0; i < cards.length; i++) {
       var card = cards[i];
       var seccion = card.closest("section");
