@@ -9,7 +9,7 @@
   }
 
   window.PORTAFOLIO_CONFIG = congelar({
-    VERSION: "18",
+    VERSION: "19",
     CLAVE_MAZMORRA: "portafolio.v1.mazmorra",
     VALOR_ON: "1",
     VALOR_OFF: "0",
