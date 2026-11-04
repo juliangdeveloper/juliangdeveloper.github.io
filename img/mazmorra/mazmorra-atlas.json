@@ -1,0 +1,1342 @@
+{
+ "image": "mazmorra-atlas.png",
+ "size": [
+  256,
+  506
+ ],
+ "scale": 1,
+ "frames": {
+  "bestia/dragon": {
+   "x": 198,
+   "y": 394,
+   "w": 16,
+   "h": 16
+  },
+  "bestia/extra/casco": {
+   "x": 54,
+   "y": 498,
+   "w": 10,
+   "h": 5
+  },
+  "bestia/extra/halo": {
+   "x": 65,
+   "y": 498,
+   "w": 12,
+   "h": 4
+  },
+  "bestia/extra/zzz": {
+   "x": 9,
+   "y": 498,
+   "w": 6,
+   "h": 7
+  },
+  "bestia/hada": {
+   "x": 215,
+   "y": 394,
+   "w": 16,
+   "h": 16
+  },
+  "bestia/heraldo": {
+   "x": 232,
+   "y": 394,
+   "w": 16,
+   "h": 16
+  },
+  "bestia/mano": {
+   "x": 0,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "bestia/mimico": {
+   "x": 17,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "bestia/murcielago": {
+   "x": 34,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "bestia/topo": {
+   "x": 51,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "bestia/trasgo": {
+   "x": 68,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "brasa/deco/brasero": {
+   "x": 146,
+   "y": 361,
+   "w": 16,
+   "h": 24
+  },
+  "brasa/deco/cadena": {
+   "x": 225,
+   "y": 361,
+   "w": 6,
+   "h": 24
+  },
+  "brasa/deco/grieta": {
+   "x": 197,
+   "y": 445,
+   "w": 32,
+   "h": 8
+  },
+  "brasa/deco/vela": {
+   "x": 177,
+   "y": 445,
+   "w": 6,
+   "h": 12
+  },
+  "brasa/luz/charco": {
+   "x": 0,
+   "y": 394,
+   "w": 32,
+   "h": 16
+  },
+  "brasa/muro/esq-ne": {
+   "x": 84,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/esq-no": {
+   "x": 93,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/esq-se": {
+   "x": 102,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/esq-so": {
+   "x": 111,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/h": {
+   "x": 0,
+   "y": 462,
+   "w": 32,
+   "h": 8
+  },
+  "brasa/muro/int-ne": {
+   "x": 120,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/int-no": {
+   "x": 129,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/int-se": {
+   "x": 138,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/int-so": {
+   "x": 147,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "brasa/muro/v": {
+   "x": 0,
+   "y": 361,
+   "w": 8,
+   "h": 32
+  },
+  "brasa/particula": {
+   "x": 85,
+   "y": 498,
+   "w": 4,
+   "h": 4
+  },
+  "brasa/pasillo": {
+   "x": 85,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "brasa/piso/a": {
+   "x": 131,
+   "y": 0,
+   "w": 32,
+   "h": 32
+  },
+  "brasa/piso/b": {
+   "x": 164,
+   "y": 0,
+   "w": 32,
+   "h": 32
+  },
+  "brasa/piso/detalle": {
+   "x": 102,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "brasa/puerta/h": {
+   "x": 165,
+   "y": 471,
+   "w": 24,
+   "h": 8
+  },
+  "brasa/puerta/v": {
+   "x": 180,
+   "y": 361,
+   "w": 8,
+   "h": 24
+  },
+  "ceniza/deco/ceniza-monton": {
+   "x": 50,
+   "y": 480,
+   "w": 16,
+   "h": 8
+  },
+  "ceniza/deco/huesos": {
+   "x": 67,
+   "y": 480,
+   "w": 16,
+   "h": 8
+  },
+  "ceniza/deco/telarana": {
+   "x": 119,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "ceniza/deco/viga-caida": {
+   "x": 79,
+   "y": 445,
+   "w": 32,
+   "h": 12
+  },
+  "ceniza/luz/charco": {
+   "x": 33,
+   "y": 394,
+   "w": 32,
+   "h": 16
+  },
+  "ceniza/muro/esq-ne": {
+   "x": 156,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/esq-no": {
+   "x": 165,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/esq-se": {
+   "x": 174,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/esq-so": {
+   "x": 183,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/h": {
+   "x": 33,
+   "y": 462,
+   "w": 32,
+   "h": 8
+  },
+  "ceniza/muro/int-ne": {
+   "x": 192,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/int-no": {
+   "x": 201,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/int-se": {
+   "x": 210,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/int-so": {
+   "x": 219,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "ceniza/muro/v": {
+   "x": 9,
+   "y": 361,
+   "w": 8,
+   "h": 32
+  },
+  "ceniza/particula": {
+   "x": 90,
+   "y": 498,
+   "w": 4,
+   "h": 4
+  },
+  "ceniza/pasillo": {
+   "x": 136,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "ceniza/piso/a": {
+   "x": 197,
+   "y": 0,
+   "w": 32,
+   "h": 32
+  },
+  "ceniza/piso/b": {
+   "x": 0,
+   "y": 97,
+   "w": 32,
+   "h": 32
+  },
+  "ceniza/piso/detalle": {
+   "x": 153,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "ceniza/puerta/h": {
+   "x": 190,
+   "y": 471,
+   "w": 24,
+   "h": 8
+  },
+  "ceniza/puerta/v": {
+   "x": 189,
+   "y": 361,
+   "w": 8,
+   "h": 24
+  },
+  "desc/caja/0": {
+   "x": 71,
+   "y": 361,
+   "w": 24,
+   "h": 24
+  },
+  "desc/caja/1": {
+   "x": 96,
+   "y": 361,
+   "w": 24,
+   "h": 24
+  },
+  "desc/contenedor/lleno": {
+   "x": 33,
+   "y": 97,
+   "w": 32,
+   "h": 32
+  },
+  "desc/contenedor/vacio": {
+   "x": 66,
+   "y": 97,
+   "w": 32,
+   "h": 32
+  },
+  "estado/chispa": {
+   "x": 228,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "estado/ojo": {
+   "x": 237,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "estado/telarana": {
+   "x": 246,
+   "y": 480,
+   "w": 8,
+   "h": 8
+  },
+  "faro/deco/espejo": {
+   "x": 232,
+   "y": 361,
+   "w": 12,
+   "h": 20
+  },
+  "faro/deco/estandarte": {
+   "x": 45,
+   "y": 361,
+   "w": 12,
+   "h": 28
+  },
+  "faro/deco/hiedra": {
+   "x": 170,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "faro/deco/vitral": {
+   "x": 163,
+   "y": 361,
+   "w": 16,
+   "h": 24
+  },
+  "faro/luz/charco": {
+   "x": 66,
+   "y": 394,
+   "w": 32,
+   "h": 16
+  },
+  "faro/luz/haz": {
+   "x": 0,
+   "y": 0,
+   "w": 48,
+   "h": 96
+  },
+  "faro/muro/esq-ne": {
+   "x": 0,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/esq-no": {
+   "x": 9,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/esq-se": {
+   "x": 18,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/esq-so": {
+   "x": 27,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/h": {
+   "x": 66,
+   "y": 462,
+   "w": 32,
+   "h": 8
+  },
+  "faro/muro/int-ne": {
+   "x": 36,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/int-no": {
+   "x": 45,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/int-se": {
+   "x": 54,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/int-so": {
+   "x": 63,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "faro/muro/v": {
+   "x": 18,
+   "y": 361,
+   "w": 8,
+   "h": 32
+  },
+  "faro/particula": {
+   "x": 95,
+   "y": 498,
+   "w": 4,
+   "h": 4
+  },
+  "faro/pasillo": {
+   "x": 187,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "faro/piso/a": {
+   "x": 99,
+   "y": 97,
+   "w": 32,
+   "h": 32
+  },
+  "faro/piso/b": {
+   "x": 132,
+   "y": 97,
+   "w": 32,
+   "h": 32
+  },
+  "faro/piso/detalle": {
+   "x": 204,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "faro/puerta/h": {
+   "x": 215,
+   "y": 471,
+   "w": 24,
+   "h": 8
+  },
+  "faro/puerta/v": {
+   "x": 198,
+   "y": 361,
+   "w": 8,
+   "h": 24
+  },
+  "forja/deco/herramientas-pared": {
+   "x": 221,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "forja/deco/horno": {
+   "x": 121,
+   "y": 361,
+   "w": 24,
+   "h": 24
+  },
+  "forja/deco/rejilla": {
+   "x": 238,
+   "y": 411,
+   "w": 16,
+   "h": 16
+  },
+  "forja/deco/tuberia": {
+   "x": 16,
+   "y": 498,
+   "w": 32,
+   "h": 6
+  },
+  "forja/luz/charco": {
+   "x": 99,
+   "y": 394,
+   "w": 32,
+   "h": 16
+  },
+  "forja/muro/esq-ne": {
+   "x": 72,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/esq-no": {
+   "x": 81,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/esq-se": {
+   "x": 90,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/esq-so": {
+   "x": 99,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/h": {
+   "x": 99,
+   "y": 462,
+   "w": 32,
+   "h": 8
+  },
+  "forja/muro/int-ne": {
+   "x": 108,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/int-no": {
+   "x": 117,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/int-se": {
+   "x": 126,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/int-so": {
+   "x": 135,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "forja/muro/v": {
+   "x": 27,
+   "y": 361,
+   "w": 8,
+   "h": 32
+  },
+  "forja/particula": {
+   "x": 100,
+   "y": 498,
+   "w": 4,
+   "h": 4
+  },
+  "forja/pasillo": {
+   "x": 0,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "forja/piso/a": {
+   "x": 165,
+   "y": 97,
+   "w": 32,
+   "h": 32
+  },
+  "forja/piso/b": {
+   "x": 198,
+   "y": 97,
+   "w": 32,
+   "h": 32
+  },
+  "forja/piso/detalle": {
+   "x": 17,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "forja/puerta/h": {
+   "x": 0,
+   "y": 480,
+   "w": 24,
+   "h": 8
+  },
+  "forja/puerta/v": {
+   "x": 207,
+   "y": 361,
+   "w": 8,
+   "h": 24
+  },
+  "icono/datos": {
+   "x": 144,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "icono/generico": {
+   "x": 153,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "icono/herramienta": {
+   "x": 162,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "icono/juego": {
+   "x": 171,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "icono/musica": {
+   "x": 180,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "lanz/fragmento/alto": {
+   "x": 198,
+   "y": 328,
+   "w": 16,
+   "h": 32
+  },
+  "lanz/fragmento/bajo": {
+   "x": 215,
+   "y": 328,
+   "w": 16,
+   "h": 32
+  },
+  "lanz/fragmento/medio": {
+   "x": 232,
+   "y": 328,
+   "w": 16,
+   "h": 32
+  },
+  "lanz/fuente": {
+   "x": 98,
+   "y": 0,
+   "w": 32,
+   "h": 48
+  },
+  "lanz/halo": {
+   "x": 49,
+   "y": 0,
+   "w": 48,
+   "h": 48
+  },
+  "lanz/racimo-pila": {
+   "x": 0,
+   "y": 130,
+   "w": 32,
+   "h": 32
+  },
+  "llama/deco/alfombra": {
+   "x": 132,
+   "y": 394,
+   "w": 32,
+   "h": 16
+  },
+  "llama/deco/aplique": {
+   "x": 68,
+   "y": 445,
+   "w": 10,
+   "h": 16
+  },
+  "llama/deco/estandarte": {
+   "x": 58,
+   "y": 361,
+   "w": 12,
+   "h": 28
+  },
+  "llama/luz/charco": {
+   "x": 165,
+   "y": 394,
+   "w": 32,
+   "h": 16
+  },
+  "llama/muro/esq-ne": {
+   "x": 189,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/esq-no": {
+   "x": 198,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/esq-se": {
+   "x": 207,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/esq-so": {
+   "x": 216,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/h": {
+   "x": 132,
+   "y": 462,
+   "w": 32,
+   "h": 8
+  },
+  "llama/muro/int-ne": {
+   "x": 225,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/int-no": {
+   "x": 234,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/int-se": {
+   "x": 243,
+   "y": 489,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/int-so": {
+   "x": 0,
+   "y": 498,
+   "w": 8,
+   "h": 8
+  },
+  "llama/muro/v": {
+   "x": 36,
+   "y": 361,
+   "w": 8,
+   "h": 32
+  },
+  "llama/particula": {
+   "x": 78,
+   "y": 498,
+   "w": 6,
+   "h": 4
+  },
+  "llama/pasillo": {
+   "x": 34,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "llama/piso/a": {
+   "x": 33,
+   "y": 130,
+   "w": 32,
+   "h": 32
+  },
+  "llama/piso/b": {
+   "x": 66,
+   "y": 130,
+   "w": 32,
+   "h": 32
+  },
+  "llama/piso/detalle": {
+   "x": 51,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "llama/puerta/h": {
+   "x": 25,
+   "y": 480,
+   "w": 24,
+   "h": 8
+  },
+  "llama/puerta/v": {
+   "x": 216,
+   "y": 361,
+   "w": 8,
+   "h": 24
+  },
+  "obj/datos/0-balanza/calido": {
+   "x": 99,
+   "y": 130,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/0-balanza/frio": {
+   "x": 132,
+   "y": 130,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/0-balanza/neutro": {
+   "x": 165,
+   "y": 130,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/1-frasco/calido": {
+   "x": 198,
+   "y": 130,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/1-frasco/frio": {
+   "x": 0,
+   "y": 163,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/1-frasco/neutro": {
+   "x": 33,
+   "y": 163,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/2-reloj/calido": {
+   "x": 66,
+   "y": 163,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/2-reloj/frio": {
+   "x": 99,
+   "y": 163,
+   "w": 32,
+   "h": 32
+  },
+  "obj/datos/2-reloj/neutro": {
+   "x": 132,
+   "y": 163,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/0-estatua/calido": {
+   "x": 165,
+   "y": 163,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/0-estatua/frio": {
+   "x": 198,
+   "y": 163,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/0-estatua/neutro": {
+   "x": 0,
+   "y": 196,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/1-urna/calido": {
+   "x": 33,
+   "y": 196,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/1-urna/frio": {
+   "x": 66,
+   "y": 196,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/1-urna/neutro": {
+   "x": 99,
+   "y": 196,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/2-barril/calido": {
+   "x": 132,
+   "y": 196,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/2-barril/frio": {
+   "x": 165,
+   "y": 196,
+   "w": 32,
+   "h": 32
+  },
+  "obj/generico/2-barril/neutro": {
+   "x": 198,
+   "y": 196,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/0-yunque/calido": {
+   "x": 0,
+   "y": 229,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/0-yunque/frio": {
+   "x": 33,
+   "y": 229,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/0-yunque/neutro": {
+   "x": 66,
+   "y": 229,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/1-maquina/calido": {
+   "x": 99,
+   "y": 229,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/1-maquina/frio": {
+   "x": 132,
+   "y": 229,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/1-maquina/neutro": {
+   "x": 165,
+   "y": 229,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/2-caja/calido": {
+   "x": 198,
+   "y": 229,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/2-caja/frio": {
+   "x": 0,
+   "y": 262,
+   "w": 32,
+   "h": 32
+  },
+  "obj/herramienta/2-caja/neutro": {
+   "x": 33,
+   "y": 262,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/0-cofre/calido": {
+   "x": 66,
+   "y": 262,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/0-cofre/frio": {
+   "x": 99,
+   "y": 262,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/0-cofre/neutro": {
+   "x": 132,
+   "y": 262,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/1-dado/calido": {
+   "x": 165,
+   "y": 262,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/1-dado/frio": {
+   "x": 198,
+   "y": 262,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/1-dado/neutro": {
+   "x": 0,
+   "y": 295,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/2-tablero/calido": {
+   "x": 33,
+   "y": 295,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/2-tablero/frio": {
+   "x": 66,
+   "y": 295,
+   "w": 32,
+   "h": 32
+  },
+  "obj/juego/2-tablero/neutro": {
+   "x": 99,
+   "y": 295,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/0-organo/calido": {
+   "x": 132,
+   "y": 295,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/0-organo/frio": {
+   "x": 165,
+   "y": 295,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/0-organo/neutro": {
+   "x": 198,
+   "y": 295,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/1-arpa/calido": {
+   "x": 0,
+   "y": 328,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/1-arpa/frio": {
+   "x": 33,
+   "y": 328,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/1-arpa/neutro": {
+   "x": 66,
+   "y": 328,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/2-campana/calido": {
+   "x": 99,
+   "y": 328,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/2-campana/frio": {
+   "x": 132,
+   "y": 328,
+   "w": 32,
+   "h": 32
+  },
+  "obj/musica/2-campana/neutro": {
+   "x": 165,
+   "y": 328,
+   "w": 32,
+   "h": 32
+  },
+  "peana/0": {
+   "x": 165,
+   "y": 462,
+   "w": 32,
+   "h": 8
+  },
+  "peana/1": {
+   "x": 198,
+   "y": 462,
+   "w": 32,
+   "h": 8
+  },
+  "peana/23": {
+   "x": 0,
+   "y": 471,
+   "w": 32,
+   "h": 8
+  },
+  "peana/4": {
+   "x": 33,
+   "y": 471,
+   "w": 32,
+   "h": 8
+  },
+  "peana/5": {
+   "x": 66,
+   "y": 471,
+   "w": 32,
+   "h": 8
+  },
+  "peana/6": {
+   "x": 99,
+   "y": 471,
+   "w": 32,
+   "h": 8
+  },
+  "peana/7": {
+   "x": 132,
+   "y": 471,
+   "w": 32,
+   "h": 8
+  },
+  "pila/etiqueta-9s": {
+   "x": 184,
+   "y": 445,
+   "w": 12,
+   "h": 10
+  },
+  "pila/gancho": {
+   "x": 49,
+   "y": 498,
+   "w": 4,
+   "h": 6
+  },
+  "pila/mini/datos/calido": {
+   "x": 68,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/datos/frio": {
+   "x": 85,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/datos/neutro": {
+   "x": 102,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/generico/calido": {
+   "x": 119,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/generico/frio": {
+   "x": 136,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/generico/neutro": {
+   "x": 153,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/herramienta/calido": {
+   "x": 170,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/herramienta/frio": {
+   "x": 187,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/herramienta/neutro": {
+   "x": 204,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/juego/calido": {
+   "x": 221,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/juego/frio": {
+   "x": 238,
+   "y": 428,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/juego/neutro": {
+   "x": 0,
+   "y": 445,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/musica/calido": {
+   "x": 17,
+   "y": 445,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/musica/frio": {
+   "x": 34,
+   "y": 445,
+   "w": 16,
+   "h": 16
+  },
+  "pila/mini/musica/neutro": {
+   "x": 51,
+   "y": 445,
+   "w": 16,
+   "h": 16
+  },
+  "placa/brasa-9s": {
+   "x": 112,
+   "y": 445,
+   "w": 12,
+   "h": 12
+  },
+  "placa/ceniza-9s": {
+   "x": 125,
+   "y": 445,
+   "w": 12,
+   "h": 12
+  },
+  "placa/faro-9s": {
+   "x": 138,
+   "y": 445,
+   "w": 12,
+   "h": 12
+  },
+  "placa/forja-9s": {
+   "x": 151,
+   "y": 445,
+   "w": 12,
+   "h": 12
+  },
+  "placa/llama-9s": {
+   "x": 164,
+   "y": 445,
+   "w": 12,
+   "h": 12
+  }
+ },
+ "nine_slice": {
+  "placa/*-9s": 4,
+  "pila/etiqueta-9s": 4
+ },
+ "anchors": {
+  "bestia/hada": {
+   "cabeza": [
+    7,
+    1
+   ]
+  },
+  "bestia/mano": {
+   "cabeza": [
+    8,
+    0
+   ]
+  },
+  "bestia/heraldo": {
+   "cabeza": [
+    7,
+    0
+   ]
+  },
+  "bestia/murcielago": {
+   "cabeza": [
+    7,
+    3
+   ]
+  },
+  "bestia/topo": {
+   "cabeza": [
+    7,
+    2
+   ]
+  },
+  "bestia/mimico": {
+   "cabeza": [
+    7,
+    3
+   ]
+  },
+  "bestia/dragon": {
+   "cabeza": [
+    9,
+    1
+   ]
+  },
+  "bestia/trasgo": {
+   "cabeza": [
+    7,
+    0
+   ]
+  }
+ }
+}

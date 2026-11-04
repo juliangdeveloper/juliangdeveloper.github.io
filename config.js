@@ -9,13 +9,13 @@
   }
 
   window.PORTAFOLIO_CONFIG = congelar({
-    VERSION: "12",
+    VERSION: "13",
     CLAVE_MAZMORRA: "portafolio.v1.mazmorra",
     VALOR_ON: "1",
     VALOR_OFF: "0",
     FASE_ENERGIA: "6",
     FASE_RECICLAJE: "7",
-    FUSION: { fases: ["2", "3"], fase: "2", nombre: "Definición y Diseño" },
+    FUSION: { fases: ["2", "3"], fase: "23", nombre: "Definición y Diseño" },
     ANCHO_MOVIL: 519,
     ANCHO_TABLET: 899,
     COLS_MOVIL: 2,
@@ -24,11 +24,6 @@
     GAP: 8,
     VISTA_OBJETO: "-22 -22 44 44",
     VISTA_PILA: "-28 -28 56 56",
-    RAYO_STUB: 0,
-    RAYO_ANCHO: 4,
-    RAYO_FINO: 1.4,
-    RAYO_OPACIDAD: 0.45,
-    RAYO_NODO: 3.2,
     BESTIA_PASO: 0.45,
     ANTORCHA_PASO: 0.37,
     NIVELES: [

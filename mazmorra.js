@@ -11,22 +11,38 @@
   var S3 = "#5a504a";
   var K = "#171110";
   var HL = "#6e645c";
+  var ANCHO = 352;
+  var HUECO = 16;
+  var MURO = 8;
+  var MARGEN = 12;
+  var CAB = 22;
+  var BANDA_BESTIAS = 34;
+  var OBJ = 64;
+  var PLACA_W = 76;
+  var PLACA_H = 26;
+  var CELDA_W = 84;
+  var CELDA_H = 112;
   var fases = null;
   var raiz = null;
   var placa = null;
+  var lienzoEl = null;
+  var escalaEl = null;
   var salasEl = null;
   var encendida = false;
-  var enVista = true;
   var firmaActual = "";
   var pedido = 0;
-  var ambiente = null;
-  var metaTema = null;
-  var temaOriginal = "";
+  var relojResize = 0;
+  var observador = null;
   var caja = null;
   var dialogoAjustes = null;
   var dialogoPila = null;
   var tituloPila = null;
   var listaPila = null;
+  var atlas = null;
+  var atlasImg = null;
+  var atlasCss = "";
+  var atlasEstado = "cargando";
+  var placaCache = {};
 
   var COLORES = {
     b: "#bfe8f0",
@@ -51,108 +67,179 @@
 
   var ARTE = {
     hada: [
-      "....bbbb..bbbb..",
-      "...bbbbbbbbbbbb.",
-      "....bbb....bbb..",
-      "......BppppB....",
-      "......ppccep....",
-      "......pppppp....",
-      ".......BBBB.....",
-      ".......BppB.....",
-      "......YYYYYY....",
-      ".......YYYY.....",
-      "........YY......"
+      "................",
+      ".oo.........oo..",
+      "obbo..oooo.obbo.",
+      "obBbooaaaaobBbo.",
+      "obBBbaaaaaabBBbo",
+      ".obBbappppabBbo.",
+      "..obbpeppepbbo..",
+      "...ooppppppooo..",
+      ".....oBppBo.oyo.",
+      "....oBBBBBBooyo.",
+      "...opBBbbBBpYYYo",
+      "....oBBBBBBoYcYo",
+      "...oBBBBBBBBYYYo",
+      "....oppooppoooo.",
+      "....oppooppo....",
+      "................"
     ],
     mano: [
-      "................",
-      ".....pppppp.....",
-      "....ppcccppp....",
-      "...pppccepppp...",
-      "..ppppppppppp...",
-      "..pppppppppppp..",
-      "...pppp..pppp...",
-      "....pp....pp....",
-      "....pp....pp....",
-      "....nn....nn...."
+      "......ee.ee.....",
+      "...eeeooeooeee..",
+      "..eooeppeppeooe.",
+      "..eppeppeppeppe.",
+      "..eppeppeppeppe.",
+      "..eppeppeppeppe.",
+      "..epaepaepaepae.",
+      ".eepppppppppppe.",
+      "eppepppppppppe..",
+      "epppppwwwppppe..",
+      ".eppppwcewpppe..",
+      "..epppwwwppppe..",
+      "..epppppppppe...",
+      "...euuuuuuue....",
+      "...errrrrrre....",
+      "................"
     ],
     heraldo: [
-      "......wwww......",
-      ".....wkkkkw.....",
-      ".....wkrrkw.....",
-      "......wwww......",
-      "......rrrr......",
-      ".....rYYYYr.....",
-      ".....rrrrrr.....",
-      "......rrrr......",
-      "......YYYY......",
-      "......Y..Y......",
-      "......Y..Y......",
-      ".....YY..YY....."
+      "......oooo......",
+      ".....owwwwo.....",
+      "....owwwwwwo....",
+      "...owwkkkkwwo...",
+      "...owkrkkrkwo...",
+      "...owkkkkkkwo...",
+      "....owwwwwwo....",
+      "...orrrrrro...o.",
+      "..orrrrrrrpoooYo",
+      "..orrYYYYrpYYYYo",
+      "..orrrrrrrooooYo",
+      "...orrrrrro...o.",
+      "....oYooYo......",
+      "....oYooYo......",
+      "...oYYooYYo.....",
+      "................"
     ],
     murcielago: [
-      ".....kkkkkk.....",
-      "......mmmm......",
-      "....mmmmmmmm....",
-      "...mmmmmmmmmm...",
-      "..mmmmmmmmmmmm..",
-      "...mmmrmmmrmm...",
-      "....mmmmmmmm....",
-      ".....mmmmmm.....",
-      "......mmmm......",
-      ".......yy.......",
-      "......yyyy......",
-      ".......YY......."
+      "................",
+      "................",
+      "................",
+      ".......oo.......",
+      "......oYYo......",
+      "......okoo......",
+      ".o...ommmmo...o.",
+      "omo.ommmmmmo.omo",
+      "ommommrmmrmmommo",
+      "ommmmmmmmmmmmmmo",
+      "omUmmmmwwmmmmUmo",
+      "omUommmmmmmmoUmo",
+      "omo.ommmmmmo.omo",
+      ".o...ommmmo...o.",
+      ".....oyooyo.....",
+      "................"
     ],
     topo: [
-      "......YYYY......",
-      ".....YyyyyY.....",
-      ".....YnppnY.....",
-      "......pppp......",
-      "......pccep.....",
-      ".....nnnnnn.....",
-      "....nnnnnnnn....",
-      "...kkkkkkkkkk...",
-      "..kkkkkkkkkkkk..",
-      "...kkk....kkk..."
+      "................",
+      "................",
+      ".......oo.......",
+      ".....ooccoo.....",
+      "....oYYccYYo....",
+      "...oYyyyyyyYo...",
+      "...oYnnnnnnYo...",
+      "...onnennenno...",
+      "...onnnppnnnoo..",
+      "....onnppnnoaao.",
+      "...onnnnnnnnaao.",
+      "..oonnnnnnnnoao.",
+      "..oonnnnnnnnoo..",
+      "...onnnnnnnno...",
+      "...okkkookkko...",
+      "................"
     ],
     mimico: [
-      "......aaaa......",
-      "....aYYYYYYa....",
-      "...aYccYYccYa...",
-      "...aYYYYYYYYa...",
-      "...aawwawwawa...",
-      "...aaaaaaaaaa...",
-      "....aYYYYYYa....",
-      ".....aaaaaa.....",
-      "......a..a......"
+      "................",
+      "................",
+      "................",
+      ".....oooooo.....",
+      "...ooaaaaaaoo...",
+      "..oaaYyyyyYaao..",
+      ".oaYccyyyyccYao.",
+      ".oaYceyyyyecYao.",
+      ".oaYYYYYYYYYYao.",
+      ".oawkwkwkwkwkao.",
+      ".oakkkrrrrkkkao.",
+      ".oawkwkwkwkwkao.",
+      ".oaYYYYcYYYYYao.",
+      ".oaaaaaaaaaaaao.",
+      "..oaaooooooaao..",
+      "................"
     ],
     dragon: [
-      "........UUU.....",
-      ".......UcccU....",
-      "......UuuuuUU...",
-      ".....UuuuuuuU...",
-      "....uUUUuuuu....",
-      "...uUUUUu.......",
-      "..uUUUU.........",
-      "...UUU..........",
-      "....UU....UU....",
-      ".....U....U.....",
-      ".....oo..oo....."
+      "................",
+      ".......oo..o....",
+      "......oUUooUo...",
+      ".....oUuuUUo....",
+      "....oUuuuuuUo...",
+      "....ouucuuucUo..",
+      ".oo.ouuuuuuuuo..",
+      "oUUo.ouuoouuo...",
+      "oUuUooUuuuuUo...",
+      "oUuuUUuuuuuuUo..",
+      ".oUuuUuuoouuUoo.",
+      "..oUUuuuoouuUouo",
+      "...oouuuuuuuUuUo",
+      "....oUUoooUUUoo.",
+      "....oooo.oooo...",
+      "................"
     ],
     trasgo: [
-      "....G......G....",
-      "...GG......GG...",
-      "...GggggggggG...",
-      "..GgcgggggcggG..",
-      "..GggggggggggG..",
-      "...GggGrrGggG...",
-      "....GggggggG....",
-      "...gggggggggg...",
-      "...GGGGGGGGGG...",
-      "....GG....GG....",
-      "....nn....nn...."
+      ".o............o.",
+      "oGo..oooooo..oGo",
+      "oGGooGGGGGGooGGo",
+      ".oGgGggggggGgGo.",
+      "..oGgggggggggo..",
+      "..oggcegggcego..",
+      "..oggggggggggo..",
+      "...oggrwwrggo...",
+      "....oggggggooo..",
+      "...onnnnnnnnaao.",
+      "..ognnnnnnnnaao.",
+      "..ognnnnnnnngo..",
+      "...onnnnnnnno...",
+      "...oGGooooGGo...",
+      "...onno..onno...",
+      "................"
     ]
   };
+
+  var VARS = {
+    juego: ["cofre", "dado", "tablero"],
+    herramienta: ["yunque", "maquina", "caja"],
+    musica: ["organo", "arpa", "campana"],
+    datos: ["balanza", "frasco", "reloj"],
+    generico: ["estatua", "urna", "barril"]
+  };
+  var RAMPAS = ["calido", "frio", "neutro"];
+  var EMOJIS = {
+    musica: ["🎹", "🎼", "🎵", "🎸", "🥁"],
+    juego: ["🎮", "🐱", "🃏", "🎲", "🧩", "🟦"],
+    herramienta: ["🔍", "🛠", "🧹", "⚙", "💻"],
+    datos: ["📊", "⚖", "🍎", "💪", "❤"]
+  };
+  var REGLAS = [
+    [/piano|musica|melodia|audio|midi/, "musica"],
+    [/juego|jugar|puzzle|party|rpg|nivel/, "juego"],
+    [/motor|engine|api|cli|diff|ruta|editor/, "herramienta"],
+    [/salud|comida|habito|balance|finanza|registro/, "datos"]
+  ];
+  var DECOS = {
+    ceniza: ["telarana", "huesos", "ceniza-monton", "viga-caida"],
+    brasa: ["brasero", "cadena", "vela", "grieta"],
+    llama: ["estandarte", "alfombra", "aplique"],
+    forja: ["horno", "herramientas-pared", "tuberia", "rejilla"],
+    faro: ["estandarte", "hiedra", "espejo", "vitral"]
+  };
+  var ALTAS = { estandarte: 1, cadena: 1, aplique: 1, vitral: 1, espejo: 1, "herramientas-pared": 1 };
 
   function engranaje() {
     var d = '<g fill="' + S1 + '">';
@@ -182,12 +269,9 @@
     chatarra: '<rect x="-14" y="2" width="12" height="8" fill="' + S3 + '" transform="rotate(-18 -8 6)"/><circle cx="6" cy="1" r="7" fill="' + S3 + '"/><circle cx="6" cy="1" r="2.4" fill="#2a2422" stroke="none"/><rect x="1" y="-14" width="5" height="8" fill="' + HL + '" transform="rotate(28 4 -10)"/><path d="M-6 8 L8 14" stroke="' + HL + '" stroke-width="3"/>'
   };
 
-  function crearSvg(inner, viewBox, clase, extra) {
+  function crearSvg(inner, viewBox) {
     var doc = new DOMParser().parseFromString(
-      '<svg xmlns="' + SVGNS + '" viewBox="' + viewBox + '"' +
-      (clase ? ' class="' + clase + '"' : "") +
-      (extra || "") +
-      ' aria-hidden="true" focusable="false">' + inner + "</svg>",
+      '<svg xmlns="' + SVGNS + '" viewBox="' + viewBox + '" aria-hidden="true" focusable="false">' + inner + "</svg>",
       "image/svg+xml"
     );
     return document.importNode(doc.documentElement, true);
@@ -217,31 +301,310 @@
   function spritePixel(filas) {
     var alto = filas.length;
     var ancho = filas[0].length;
-    var partes = ['<ellipse cx="' + (ancho / 2) + '" cy="' + (alto - 1) + '" rx="' + (ancho / 3.2).toFixed(1) + '" ry="1.1" fill="#000" opacity="0.45"/>'];
+    var partes = [];
     for (var y = 0; y < alto; y++) {
       var fila = filas[y];
-      if (fila.length < ancho) fila += "................".slice(0, ancho - fila.length);
       for (var x = 0; x < ancho; x++) {
         var color = COLORES[fila.charAt(x)];
         if (!color) continue;
         partes.push('<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + color + '"/>');
       }
     }
-    return crearSvg(partes.join(""), "0 0 " + ancho + " " + alto, "", ' shape-rendering="crispEdges"');
+    return crearSvg(partes.join(""), "0 0 " + ancho + " " + alto);
   }
 
-  function indice(id, n) {
-    var h = 2166136261;
-    var s = String(id);
+  function utf8(s) {
+    var out = [];
     for (var i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 16777619);
+      var c = s.charCodeAt(i);
+      if (c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length) {
+        var c2 = s.charCodeAt(i + 1);
+        if (c2 >= 0xDC00 && c2 <= 0xDFFF) {
+          c = 0x10000 + ((c - 0xD800) << 10) + (c2 - 0xDC00);
+          i++;
+        }
+      }
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xC0 | (c >> 6), 0x80 | (c & 63));
+      else if (c < 0x10000) out.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+      else out.push(0xF0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
     }
-    return n ? (h >>> 0) % n : 0;
+    return out;
+  }
+
+  function fnv(s) {
+    var h = 0x811c9dc5;
+    var b = utf8(String(s));
+    for (var i = 0; i < b.length; i++) {
+      h ^= b[i];
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  function mulberry(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), (t | 1)) >>> 0;
+      var m = Math.imul(t ^ (t >>> 7), (t | 61)) >>> 0;
+      t = (t ^ ((t + m) >>> 0)) >>> 0;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function pyRound(v) {
+    var neg = v < 0;
+    var a = Math.abs(v);
+    var f = Math.floor(a);
+    var d = a - f;
+    var r = d > 0.5 ? f + 1 : d < 0.5 ? f : (f % 2 === 0 ? f : f + 1);
+    return neg ? -r : r;
+  }
+
+  function snap(v, s) {
+    s = s || 8;
+    return pyRound(v / s) * s;
+  }
+
+  function cruza(a, b) {
+    return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+  }
+
+  function huella(cx, by) {
+    return { x: cx - PLACA_W / 2, y: by - OBJ, w: PLACA_W, h: OBJ + 4 + PLACA_H };
+  }
+
+  function muescaRect(s, e, m) {
+    return {
+      x: s.x + (e === "ne" || e === "se" ? s.w - m : 0),
+      y: s.y + (e === "so" || e === "se" ? s.h - m : 0),
+      w: m,
+      h: m
+    };
+  }
+
+  function medir(sala) {
+    var k = sala.slots;
+    if (k < 1) k = 1;
+    var h = fnv(sala.fase);
+    var w = k <= 2 ? 128 + (h % 2) * 16 : k <= 4 ? 208 + (h % 2) * 16 : ANCHO;
+    var porFila = Math.max(1, Math.floor((w - 2 * (MURO + MARGEN)) / CELDA_W));
+    var filas = Math.ceil(k / porFila);
+    var alto = CAB + 2 * MURO + 2 * MARGEN + filas * CELDA_H + BANDA_BESTIAS + (fnv(sala.fase + "h") % 2) * 16;
+    sala.w = w;
+    sala.h = snap(alto, 16);
+    sala.porFila = porFila;
+    sala.filas = filas;
+    sala.muescas = [];
+  }
+
+  function sumaAnchos(arr) {
+    var n = 0;
+    for (var i = 0; i < arr.length; i++) n += arr[i].w;
+    return n;
+  }
+
+  function ubicar(salas) {
+    var y = 0;
+    var banda = [];
+    var bandas = [];
+    var i;
+    for (i = 0; i < salas.length; i++) {
+      medir(salas[i]);
+      if (banda.length && sumaAnchos(banda) + HUECO * banda.length + salas[i].w > ANCHO) {
+        bandas.push(banda);
+        banda = [];
+      }
+      banda.push(salas[i]);
+    }
+    if (banda.length) bandas.push(banda);
+    for (i = 0; i < bandas.length; i++) {
+      var grupo = bandas[i];
+      var libre = ANCHO - sumaAnchos(grupo) - HUECO * (grupo.length - 1);
+      var clave = "banda";
+      for (var j = 0; j < grupo.length; j++) clave += grupo[j].fase;
+      var x = libre > 0 ? snap(libre * (i % 2 ? 0.75 : 0.25) + (fnv(clave) % 17) - 8) : 0;
+      if (x < 0) x = 0;
+      if (x > libre) x = libre;
+      var altoB = 0;
+      for (j = 0; j < grupo.length; j++) {
+        var s = grupo[j];
+        s.x = 12 + x;
+        s.y = y + (fnv(s.fase + "y") % 3) * 12;
+        x += s.w + HUECO;
+        var bajo = s.y + s.h - y;
+        if (bajo > altoB) altoB = bajo;
+      }
+      y += altoB + HUECO + 8;
+    }
+    return y;
+  }
+
+  function pasillos(salas) {
+    var segmentos = [];
+    var puertas = [];
+    for (var i = 0; i < salas.length - 1; i++) {
+      var a = salas[i];
+      var b = salas[i + 1];
+      if (Math.abs(a.y - b.y) < 40 && b.x > a.x) {
+        var top = Math.max(a.y, b.y) + CAB + MURO + 8;
+        var bot = Math.min(a.y + a.h, b.y + b.h) - 40;
+        var yy = snap((top + bot) / 2, 8);
+        segmentos.push({ x: a.x + a.w, y: yy, w: b.x - (a.x + a.w), h: 16 });
+        puertas.push({ sala: a, tipo: "v", x: a.x + a.w - 8, y: yy - 4 });
+        puertas.push({ sala: b, tipo: "v", x: b.x, y: yy - 4 });
+      } else {
+        var lo = Math.max(a.x, b.x) + 24;
+        var hi = Math.min(a.x + a.w, b.x + b.w) - 40;
+        var y0 = a.y + a.h;
+        var y1 = b.y;
+        if (hi - lo >= 0) {
+          var xx = snap((lo + hi) / 2, 8);
+          segmentos.push({ x: xx, y: y0, w: 16, h: y1 - y0 });
+          puertas.push({ sala: a, tipo: "h", x: xx - 4, y: a.y + a.h - 8 });
+          puertas.push({ sala: b, tipo: "h", x: xx - 4, y: b.y });
+        } else {
+          var ax = snap(a.x + a.w / 2, 8);
+          var bx = snap(b.x + b.w / 2, 8);
+          var my = snap((y0 + y1) / 2, 8) - 8;
+          segmentos.push({ x: ax, y: y0, w: 16, h: my - y0 + 16 });
+          segmentos.push({ x: Math.min(ax, bx), y: my, w: Math.abs(bx - ax) + 16, h: 16 });
+          segmentos.push({ x: bx, y: my, w: 16, h: y1 - my });
+          puertas.push({ sala: a, tipo: "h", x: ax - 4, y: a.y + a.h - 8 });
+          puertas.push({ sala: b, tipo: "h", x: bx - 4, y: b.y });
+        }
+      }
+    }
+    return { segmentos: segmentos, puertas: puertas };
+  }
+
+  function colocarSlots(sala, nivel) {
+    var x0 = sala.x + MURO + MARGEN;
+    var y0 = sala.y + MURO + CAB;
+    var x1 = sala.x + sala.w - MURO - MARGEN;
+    var y1 = sala.y + sala.h - MURO - BANDA_BESTIAS;
+    var rnd = mulberry(fnv(sala.fase + "|" + nivel));
+    var k = sala.slots;
+    var altoFila = (y1 - y0) / sala.filas;
+    var out = [];
+    var r, c, n, libre, off, cx, holg, by;
+    for (r = 0; r < sala.filas; r++) {
+      n = Math.min(sala.porFila, k - r * sala.porFila);
+      libre = (x1 - x0) - n * CELDA_W;
+      off = libre * rnd();
+      for (c = 0; c < n; c++) {
+        cx = x0 + off + (c + 0.5) * CELDA_W + (rnd() - 0.5) * (CELDA_W - PLACA_W);
+        holg = altoFila - (OBJ + 4 + PLACA_H);
+        by = y0 + r * altoFila + OBJ + rnd() * holg;
+        out.push([Math.round(cx), Math.round(by)]);
+      }
+    }
+    out.sort(function (p, q) { return p[1] - q[1] || p[0] - q[0]; });
+    var cand = ["ne", "so", "se"];
+    var o = fnv(sala.fase + "e") % 3;
+    var quiere = fnv(sala.fase + "n") % 3;
+    for (var i = 0; i < 3; i++) {
+      if (sala.muescas.length >= quiere) break;
+      var e = cand[(o + i) % 3];
+      var m = muescaRect(sala, e, 32 + MARGEN);
+      var toca = false;
+      for (var p = 0; p < out.length; p++) if (cruza(huella(out[p][0], out[p][1]), m)) toca = true;
+      if (!toca) sala.muescas.push(e);
+    }
+    return out;
+  }
+
+  function ordenar(proyectos) {
+    return proyectos.slice().sort(function (a, b) {
+      var ha = fnv(a.id || a.nombre);
+      var hb = fnv(b.id || b.nombre);
+      return ha < hb ? -1 : ha > hb ? 1 : 0;
+    });
+  }
+
+  function asignar(proyectos, sl, cupo) {
+    var proys = ordenar(proyectos);
+    var hay = proys.length > cupo && sl.length > 0;
+    var nLibres = sl.length - (hay ? 1 : 0);
+    if (nLibres < 0) nLibres = 0;
+    var vis = proys.slice(0, nLibres);
+    var resto = proys.slice(nLibres);
+    var usados = [];
+    var mapa = {};
+    for (var i = 0; i < vis.length; i++) {
+      if (!nLibres) break;
+      var p = vis[i];
+      var k = fnv((p.id || p.nombre) + "s") % nLibres;
+      var guard = 0;
+      while (usados.indexOf(k) >= 0 && guard < nLibres) {
+        k = (k + 1) % nLibres;
+        guard++;
+      }
+      usados.push(k);
+      mapa[p.id] = sl[k];
+    }
+    return { mapa: mapa, pila: hay ? sl[sl.length - 1] : null, resto: resto };
+  }
+
+  function semillaDe(app) {
+    return app.id || app.nombre || "";
+  }
+
+  function normalizar(s) {
+    var t = String(s || "").toLowerCase();
+    try { t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch (e) {}
+    return t;
+  }
+
+  function familiaDe(app) {
+    var em = String(app.emoji || "").replace(/\uFE0F/g, "");
+    var grupos = ["musica", "juego", "herramienta", "datos"];
+    var g, i, lista;
+    for (g = 0; g < grupos.length; g++) {
+      lista = EMOJIS[grupos[g]];
+      for (i = 0; i < lista.length; i++) {
+        if (em.indexOf(lista[i].replace(/\uFE0F/g, "")) >= 0) return grupos[g];
+      }
+    }
+    var texto = normalizar((app.nombre || "") + " " + (app.descripcion || ""));
+    for (i = 0; i < REGLAS.length; i++) if (REGLAS[i][0].test(texto)) return REGLAS[i][1];
+    var btn = normalizar(app.boton);
+    if (btn.indexOf("jugar") >= 0) return "juego";
+    if (btn.indexOf("probar") >= 0) return "herramienta";
+    return "generico";
+  }
+
+  function aspecto(app) {
+    var id = semillaDe(app);
+    var fam = familiaDe(app);
+    var i = fnv(id) % 3;
+    var rampa = RAMPAS[fnv(id + "c") % 3];
+    return {
+      fam: fam,
+      rampa: rampa,
+      objeto: "obj/" + fam + "/" + i + "-" + VARS[fam][i] + "/" + rampa,
+      mini: "pila/mini/" + fam + "/" + rampa,
+      icono: "icono/" + fam
+    };
+  }
+
+  function estadoSprite(estado) {
+    if (estado === 2) return "estado/telarana";
+    if (estado === 3) return "estado/ojo";
+    if (estado === 4) return "estado/chispa";
+    return "";
+  }
+
+  function fragmentoDe(n) {
+    if (n >= 5) return "lanz/fragmento/alto";
+    if (n >= 3) return "lanz/fragmento/medio";
+    return "lanz/fragmento/bajo";
   }
 
   function temaDe(fase) {
-    return CFG.TEMAS[fase] || CFG.DEFECTO;
+    return CFG.TEMAS[fase] || CFG.TEMAS["0"] || CFG.DEFECTO;
   }
 
   function nivelDe(n) {
@@ -252,46 +615,11 @@
     return nivel;
   }
 
-  function cubo(ancho) {
-    if (ancho <= CFG.ANCHO_MOVIL) return "m";
-    if (ancho <= CFG.ANCHO_TABLET) return "t";
-    return "a";
-  }
-
-  function grilla(n, ancho) {
-    var max = ancho <= CFG.ANCHO_MOVIL ? CFG.COLS_MOVIL : ancho <= CFG.ANCHO_TABLET ? CFG.COLS_TABLET : CFG.COLS_ANCHO;
-    var cols = Math.max(1, Math.min(n, max));
-    var filas = Math.ceil(n / cols);
-    var spans = [];
-    var resto = n % cols;
-    var llenos = resto === 0 ? n : n - resto;
-    var i;
-    for (i = 0; i < llenos; i++) spans.push(1);
-    if (resto) {
-      var base = Math.floor(cols / resto);
-      var extra = cols % resto;
-      for (i = 0; i < resto; i++) spans.push(base + (i < extra ? 1 : 0));
-    }
-    return { cols: cols, filas: filas, spans: spans };
-  }
-
-  function antorchas(sec, i) {
-    ["izq", "der"].forEach(function (lado, k) {
-      var s = document.createElement("span");
-      s.className = "maz-antorcha maz-antorcha-" + lado;
-      s.setAttribute("aria-hidden", "true");
-      var halo = document.createElement("span");
-      halo.className = "maz-halo";
-      var llama = document.createElement("span");
-      llama.className = "maz-llama";
-      llama.style.animationDelay = ((i + k) * CFG.ANTORCHA_PASO).toFixed(2) + "s";
-      var tea = document.createElement("span");
-      tea.className = "maz-tea";
-      s.appendChild(halo);
-      s.appendChild(llama);
-      s.appendChild(tea);
-      sec.appendChild(s);
-    });
+  function slotsVisibles(sala, cupo) {
+    var n = sala.apps.length;
+    if (sala.fase === CFG.FASE_ENERGIA) return Math.min(n, 6) + 1;
+    if (sala.fase === CFG.FASE_RECICLAJE) return Math.min(n, 6);
+    return Math.min(n, cupo);
   }
 
   function leerApp(card) {
@@ -306,15 +634,30 @@
       for (var i = 0; i < ocultos.length; i++) ocultos[i].remove();
       nombre = clon.textContent.replace(/\s+/g, " ").trim();
     }
+    var desc = "";
+    var ps = card.querySelectorAll(":scope > p");
+    for (i = 0; i < ps.length; i++) {
+      if (ps[i].classList.contains("links")) continue;
+      desc = ps[i].textContent.replace(/\s+/g, " ").trim();
+      break;
+    }
     var btn = card.querySelector(".links a.btn");
-    var id = card.getAttribute("data-id") || card.getAttribute("data-app") || nombre;
-    return { id: id, nombre: nombre || id, href: btn ? btn.href : "", emoji: emoji };
-  }
-
-  function repartirBestias(salas) {
-    for (var i = 0; i < salas.length; i++) salas[i].bestias = [];
-    if (!salas.length) return;
-    for (var b = 0; b < CFG.BESTIAS.length; b++) salas[b % salas.length].bestias.push(CFG.BESTIAS[b]);
+    var id = (card.getAttribute("data-id") || card.getAttribute("data-app") || nombre || "").toLowerCase();
+    var meta = (card.getAttribute("data-proyecto") || "").split("|");
+    var estado = parseInt(meta[1], 10);
+    var comp = parseInt(meta[2], 10);
+    if (!(estado >= 0 && estado <= 4)) estado = 0;
+    if (!(comp >= 0 && comp <= 6)) comp = 0;
+    return {
+      id: id,
+      nombre: nombre || id,
+      href: btn ? btn.href : "",
+      emoji: emoji,
+      descripcion: desc,
+      boton: btn ? btn.textContent.replace(/\s+/g, " ").trim() : "",
+      estado: estado,
+      completadas: comp
+    };
   }
 
   function leerSalas() {
@@ -330,15 +673,12 @@
       var apps = [];
       for (var j = 0; j < cards.length; j++) apps.push(leerApp(cards[j]));
       salas.push({
-        fase: sec.getAttribute("data-fase") || "",
+        fase: sec.getAttribute("data-fase") || "0",
         nombre: h2 ? h2.textContent.replace(/\s+/g, " ").trim() : "",
-        apps: apps,
-        bestias: []
+        apps: apps
       });
     }
-    salas = fusionar(salas);
-    repartirBestias(salas);
-    return salas;
+    return fusionar(salas);
   }
 
   function fusionar(salas) {
@@ -357,7 +697,7 @@
     for (i = 0; i < salas.length; i++) {
       if (fusion.fases.indexOf(salas[i].fase) >= 0) {
         if (!puesta) {
-          salida.push({ fase: fusion.fase, nombre: fusion.nombre, apps: apps, bestias: [] });
+          salida.push({ fase: fusion.fase, nombre: fusion.nombre, apps: apps });
           puesta = true;
         }
       } else salida.push(salas[i]);
@@ -372,122 +712,713 @@
     return 0;
   }
 
-  function rotulo(app) {
-    return app.emoji ? app.emoji + " " + app.nombre : app.nombre;
-  }
-
-  function itemObjeto(app, tipo) {
-    var li = document.createElement("li");
-    var nodo;
-    if (app.href) {
-      nodo = document.createElement("a");
-      nodo.href = app.href;
-    } else {
-      nodo = document.createElement("span");
+  function preparar(salas, nivel) {
+    var copias = [];
+    for (var i = 0; i < salas.length; i++) {
+      copias.push({
+        fase: salas[i].fase || "0",
+        nombre: salas[i].nombre,
+        apps: salas[i].apps,
+        slots: slotsVisibles(salas[i], nivel.cupo)
+      });
     }
-    nodo.className = "maz-obj";
-    nodo.title = app.nombre;
-    var sprite = document.createElement("span");
-    sprite.className = "maz-sprite";
-    sprite.setAttribute("aria-hidden", "true");
-    sprite.appendChild(spriteObjeto(tipo));
-    var et = document.createElement("span");
-    et.className = "maz-etiq";
-    et.textContent = app.nombre;
-    nodo.appendChild(sprite);
-    nodo.appendChild(et);
-    li.appendChild(nodo);
-    return li;
+    var alto = ubicar(copias);
+    var corr = pasillos(copias);
+    for (i = 0; i < copias.length; i++) copias[i].pts = colocarSlots(copias[i], nivel.id);
+    return { salas: copias, alto: alto, corr: corr };
   }
 
-  function itemPila(sala, tema, sobra) {
-    var li = document.createElement("li");
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "maz-pila";
-    b.setAttribute("aria-label", CFG.TEXTOS.PILA + " de " + sala.nombre + ", " + sala.apps.length + " " + CFG.TEXTOS.PROYECTOS);
-    var sprite = document.createElement("span");
-    sprite.className = "maz-sprite";
-    sprite.setAttribute("aria-hidden", "true");
-    sprite.appendChild(spritePila(tema.objetos[0]));
-    var et = document.createElement("span");
-    et.className = "maz-etiq";
-    et.textContent = "+" + sobra;
-    b.appendChild(sprite);
-    b.appendChild(et);
-    b.addEventListener("click", function () { abrirPila(sala, b); });
-    li.appendChild(b);
-    return li;
+  function hayDibujo() {
+    return atlasEstado === "listo" && atlas && atlasImg;
   }
 
-  function ponerBestia(b, i) {
+  function frame(nombre) {
+    return atlas && atlas.frames ? atlas.frames[nombre] : null;
+  }
+
+  function dprDe() {
+    var ancho = lienzoEl ? lienzoEl.clientWidth : window.innerWidth;
+    var max = ancho <= CFG.ANCHO_MOVIL ? CFG.NIEBLA.DPR_MOVIL : CFG.NIEBLA.DPR_MAX;
+    return Math.min(window.devicePixelRatio || 1, max || 1);
+  }
+
+  function blit(ctx, nombre, dx, dy, escala) {
+    var f = frame(nombre);
+    if (!f) return;
+    var sc = escala || 1;
+    ctx.drawImage(atlasImg, f.x, f.y, f.w, f.h, Math.round(dx), Math.round(dy), Math.round(f.w * sc), Math.round(f.h * sc));
+  }
+
+  function tile(ctx, nombre, x, y, w, h) {
+    var f = frame(nombre);
+    if (!f || w < 1 || h < 1) return;
+    var x0 = Math.round(x);
+    var y0 = Math.round(y);
+    var x1 = Math.round(x + w);
+    var y1 = Math.round(y + h);
+    for (var yy = y0; yy < y1; yy += f.h) {
+      for (var xx = x0; xx < x1; xx += f.w) {
+        var cw = Math.min(f.w, x1 - xx);
+        var ch = Math.min(f.h, y1 - yy);
+        if (cw > 0 && ch > 0) ctx.drawImage(atlasImg, f.x, f.y, cw, ch, xx, yy, cw, ch);
+      }
+    }
+  }
+
+  function lienzoDe(w, h) {
+    var c = document.createElement("canvas");
+    var dpr = dprDe();
+    c.width = Math.max(1, Math.floor(w * dpr));
+    c.height = Math.max(1, Math.floor(h * dpr));
+    c.style.width = w + "px";
+    c.style.height = h + "px";
+    var ctx = c.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    c.setAttribute("aria-hidden", "true");
+    return { canvas: c, ctx: ctx };
+  }
+
+  function muescaLocal(sala, e, m) {
+    var r = muescaRect(sala, e, m);
+    return { x: r.x - sala.x, y: r.y - sala.y, w: r.w, h: r.h };
+  }
+
+  function dibujarMuesca(ctx, nivel, m, e) {
+    ctx.clearRect(m.x, m.y, m.w, m.h);
+    var N = nivel + "/muro/";
+    if (e === "ne") {
+      tile(ctx, N + "h", m.x - 8, m.y + m.h - 8, m.w + 8, 8);
+      tile(ctx, N + "v", m.x - 8, m.y, 8, m.h);
+      blit(ctx, N + "int-se", m.x - 8, m.y + m.h - 8, 1);
+    } else if (e === "se") {
+      tile(ctx, N + "h", m.x - 8, m.y, m.w + 8, 8);
+      tile(ctx, N + "v", m.x - 8, m.y, 8, m.h);
+      blit(ctx, N + "int-ne", m.x - 8, m.y, 1);
+    } else if (e === "so") {
+      tile(ctx, N + "h", m.x, m.y, m.w + 8, 8);
+      tile(ctx, N + "v", m.x + m.w, m.y, 8, m.h);
+      blit(ctx, N + "int-no", m.x + m.w, m.y, 1);
+    }
+  }
+
+  function planDeco(sala, nivel) {
+    var lista = DECOS[nivel] || [];
+    var out = [];
+    if (!lista.length) return out;
+    for (var j = 0; j < 2; j++) {
+      var nombre = lista[fnv(sala.fase + nivel + String(j)) % lista.length];
+      var f = frame(nivel + "/deco/" + nombre);
+      var fw = f ? f.w : 16;
+      var fh = f ? f.h : 16;
+      var alta = !!ALTAS[nombre];
+      var x = alta ? sala.w - 28 - j * 22 : 10 + j * (sala.w - 36);
+      var y = alta ? 8 : sala.h - 8 - fh - 2;
+      if (x < 8) x = 8;
+      if (x + fw > sala.w - 8) x = Math.max(8, sala.w - 8 - fw);
+      if (y < 8) y = 8;
+      out.push({ nombre: nombre, x: x, y: y, fw: fw, fh: fh });
+    }
+    return out;
+  }
+
+  function dibujarFondo(sala, nivel, puertas, decos) {
+    var box = lienzoDe(sala.w, sala.h);
+    var ctx = box.ctx;
+    var i;
+    if (!hayDibujo()) {
+      ctx.fillStyle = "#241c1a";
+      ctx.fillRect(0, 0, sala.w, sala.h);
+      ctx.strokeStyle = "#100c0b";
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, sala.w - 8, sala.h - 8);
+      for (i = 0; i < sala.muescas.length; i++) {
+        var hueco = muescaLocal(sala, sala.muescas[i], 32);
+        ctx.clearRect(hueco.x, hueco.y, hueco.w, hueco.h);
+      }
+      return box.canvas;
+    }
+    var N = nivel.id;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, sala.w, sala.h);
+    ctx.clip();
+    var ty, tx, wx, wy;
+    for (ty = 0; ty < sala.h; ty += 32) {
+      for (tx = 0; tx < sala.w; tx += 32) {
+        wx = sala.x + tx;
+        wy = sala.y + ty;
+        blit(ctx, N + "/piso/" + (fnv(sala.fase + String(wx) + String(wy)) % 5 === 0 ? "b" : "a"), tx, ty, 1);
+      }
+    }
+    for (i = 0; i < sala.muescas.length; i++) {
+      var n0 = muescaLocal(sala, sala.muescas[i], 32);
+      ctx.clearRect(n0.x, n0.y, n0.w, n0.h);
+    }
+    tile(ctx, N + "/muro/h", 0, 0, sala.w, 8);
+    tile(ctx, N + "/muro/h", 0, sala.h - 8, sala.w, 8);
+    tile(ctx, N + "/muro/v", 0, 0, 8, sala.h);
+    tile(ctx, N + "/muro/v", sala.w - 8, 0, 8, sala.h);
+    for (i = 0; i < sala.muescas.length; i++) dibujarMuesca(ctx, N, muescaLocal(sala, sala.muescas[i], 32), sala.muescas[i]);
+    var esquinas = [["esq-no", 0, 0], ["esq-ne", sala.w - 8, 0], ["esq-so", 0, sala.h - 8], ["esq-se", sala.w - 8, sala.h - 8]];
+    for (i = 0; i < esquinas.length; i++) {
+      var esq = { x: esquinas[i][1], y: esquinas[i][2], w: 8, h: 8 };
+      var tapa = false;
+      for (var k = 0; k < sala.muescas.length; k++) if (cruza(esq, muescaLocal(sala, sala.muescas[k], 32))) tapa = true;
+      if (!tapa) blit(ctx, N + "/muro/" + esquinas[i][0], esq.x, esq.y, 1);
+    }
+    for (i = 0; i < puertas.length; i++) {
+      if (puertas[i].sala !== sala) continue;
+      blit(ctx, N + "/puerta/" + puertas[i].tipo, puertas[i].x - sala.x, puertas[i].y - sala.y, 1);
+    }
+    var det = frame(N + "/piso/detalle");
+    if (det && fnv(sala.fase + "d") % 2 === 0) {
+      var rx0 = MURO + MARGEN;
+      var ry0 = MURO + CAB;
+      var rx1 = sala.w - MURO - MARGEN - det.w;
+      var ry1 = sala.h - MURO - BANDA_BESTIAS - det.h;
+      if (rx1 > rx0 && ry1 > ry0) {
+        var rnd = mulberry(fnv(sala.fase + "|det|" + N));
+        for (var t = 0; t < 6; t++) {
+          var dx = Math.round(rx0 + rnd() * (rx1 - rx0));
+          var dy = Math.round(ry0 + rnd() * (ry1 - ry0));
+          var boxD = { x: dx, y: dy, w: det.w, h: det.h };
+          var libre = true;
+          for (k = 0; k < sala.pts.length; k++) {
+            var hf = huella(sala.pts[k][0], sala.pts[k][1]);
+            hf.x -= sala.x;
+            hf.y -= sala.y;
+            if (cruza(boxD, hf)) libre = false;
+          }
+          if (libre) {
+            blit(ctx, N + "/piso/detalle", dx, dy, 1);
+            break;
+          }
+        }
+      }
+    }
+    for (i = 0; i < decos.length; i++) {
+      var d = decos[i];
+      if ((nivel.id === "brasa" && d.nombre === "brasero") || (nivel.id === "llama" && d.nombre === "aplique")) {
+        blit(ctx, N + "/luz/charco", d.x + d.fw / 2 - 16, d.y + d.fh - 8, 1);
+        continue;
+      }
+      blit(ctx, N + "/deco/" + d.nombre, d.x, d.y, 1);
+    }
+    if (nivel.id === "forja" || nivel.id === "faro") blit(ctx, N + "/luz/charco", sala.w / 2 - 16, 26, 1);
+    ctx.restore();
+    return box.canvas;
+  }
+
+  function pasilloEl(seg, nivel) {
+    var w = Math.round(seg.w);
+    var h = Math.round(seg.h);
+    if (w < 1 || h < 1) return null;
+    var box = lienzoDe(w, h);
+    box.canvas.className = "maz-pasillo";
+    box.canvas.style.left = seg.x + "px";
+    box.canvas.style.top = seg.y + "px";
+    box.canvas.style.zIndex = "0";
+    if (hayDibujo()) tile(box.ctx, nivel.id + "/pasillo", 0, 0, w, h);
+    else {
+      box.ctx.fillStyle = "#3a302c";
+      box.ctx.fillRect(0, 0, w, h);
+    }
+    return box.canvas;
+  }
+
+  function spriteEl(nombre, escala) {
+    var f = frame(nombre);
+    if (!f || !atlasCss) return null;
     var s = document.createElement("span");
-    s.className = "maz-bestia";
-    s.setAttribute("data-bicho", b.id);
-    s.setAttribute("role", "img");
-    s.setAttribute("aria-label", b.nombre);
-    s.style.animationDelay = (i * CFG.BESTIA_PASO).toFixed(2) + "s";
-    var filas = ARTE[b.id];
-    if (filas) s.appendChild(spritePixel(filas));
+    s.className = "maz-px";
+    s.setAttribute("aria-hidden", "true");
+    var sc = escala || 1;
+    s.style.width = (f.w * sc) + "px";
+    s.style.height = (f.h * sc) + "px";
+    s.style.backgroundImage = atlasCss;
+    s.style.backgroundPosition = (-f.x * sc) + "px " + (-f.y * sc) + "px";
+    s.style.backgroundSize = (atlas.size[0] * sc) + "px " + (atlas.size[1] * sc) + "px";
     return s;
   }
 
-  function crearSala(sala, span, nivel, indiceSala) {
-    var tema = temaDe(sala.fase);
+  function fondoNueve(nombre, w, h) {
+    var clave = nombre + "@" + w + "x" + h;
+    if (Object.prototype.hasOwnProperty.call(placaCache, clave)) return placaCache[clave];
+    var f = frame(nombre);
+    if (!f || !hayDibujo()) {
+      placaCache[clave] = "";
+      return "";
+    }
+    try {
+      var b = (atlas.nine_slice && (atlas.nine_slice[nombre] || atlas.nine_slice["placa/*-9s"])) || 4;
+      var c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      var ctx = c.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      function parte(sx, sy, sw, sh, dx, dy, dw, dh) {
+        if (sw > 0 && sh > 0 && dw > 0 && dh > 0) ctx.drawImage(atlasImg, f.x + sx, f.y + sy, sw, sh, dx, dy, dw, dh);
+      }
+      var W = f.w;
+      var H = f.h;
+      parte(0, 0, b, b, 0, 0, b, b);
+      parte(b, 0, W - 2 * b, b, b, 0, w - 2 * b, b);
+      parte(W - b, 0, b, b, w - b, 0, b, b);
+      parte(0, b, b, H - 2 * b, 0, b, b, h - 2 * b);
+      parte(b, b, W - 2 * b, H - 2 * b, b, b, w - 2 * b, h - 2 * b);
+      parte(W - b, b, b, H - 2 * b, w - b, b, b, h - 2 * b);
+      parte(0, H - b, b, b, 0, h - b, b, b);
+      parte(b, H - b, W - 2 * b, b, b, h - b, w - 2 * b, b);
+      parte(W - b, H - b, b, b, w - b, h - b, b, b);
+      placaCache[clave] = c.toDataURL();
+    } catch (e) {
+      placaCache[clave] = "";
+    }
+    return placaCache[clave];
+  }
+
+  function rotulo(nombre, nivel) {
+    var el = document.createElement("span");
+    el.className = "maz-rotulo";
+    el.setAttribute("aria-hidden", "true");
+    var url = fondoNueve("placa/" + nivel + "-9s", PLACA_W, PLACA_H);
+    if (url) el.style.backgroundImage = "url(" + url + ")";
+    else el.classList.add("maz-rotulo-simple");
+    var t = document.createElement("span");
+    t.textContent = nombre;
+    el.appendChild(t);
+    return el;
+  }
+
+  function etiqueta(texto) {
+    var el = document.createElement("span");
+    el.className = "maz-etiqueta";
+    el.textContent = texto;
+    var w = Math.max(22, 10 + String(texto).length * 6);
+    var h = 14;
+    var url = fondoNueve("pila/etiqueta-9s", w, h);
+    if (url) el.style.backgroundImage = "url(" + url + ")";
+    el.style.width = w + "px";
+    el.style.height = h + "px";
+    el.style.left = "18px";
+    el.style.top = "72px";
+    return el;
+  }
+
+  function baseEl(tag, clase, sala, cx, by) {
+    var el = document.createElement(tag);
+    el.className = clase;
+    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
+    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.zIndex = String(10000 + by);
+    return el;
+  }
+
+  function ponerEstado(el, app, left, top) {
+    var nombre = estadoSprite(app.estado);
+    if (!nombre) return;
+    var sp = spriteEl(nombre, 2);
+    if (!sp) return;
+    sp.style.position = "absolute";
+    sp.style.left = left + "px";
+    sp.style.top = top + "px";
+    sp.style.zIndex = "3";
+    el.appendChild(sp);
+  }
+
+  function respaldo(el, tipo, left, top, w, h) {
+    var s = document.createElement("span");
+    s.className = "maz-sprite";
+    s.style.left = left + "px";
+    s.style.top = top + "px";
+    s.style.width = w + "px";
+    s.style.height = h + "px";
+    s.appendChild(spriteObjeto(tipo));
+    el.appendChild(s);
+  }
+
+  function objetoEl(sala, app, cx, by, nivel) {
+    var el = app.href ? document.createElement("a") : document.createElement("span");
+    if (app.href) el.href = app.href;
+    el.className = "maz-obj";
+    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
+    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.zIndex = String(10000 + by);
+    el.title = app.nombre;
+    el.setAttribute("aria-label", app.nombre);
+    var asp = aspecto(app);
+    var sp = spriteEl(asp.objeto, 2);
+    if (sp) {
+      var peana = spriteEl("peana/" + (sala.fase === "2" || sala.fase === "3" ? "23" : sala.fase), 2);
+      if (peana) {
+        peana.style.position = "absolute";
+        peana.style.left = "6px";
+        peana.style.top = "48px";
+        peana.style.zIndex = "0";
+        el.appendChild(peana);
+      }
+      sp.style.position = "absolute";
+      sp.style.left = "6px";
+      sp.style.top = "0";
+      sp.style.zIndex = "1";
+      el.appendChild(sp);
+      ponerEstado(el, app, 54, 0);
+    } else {
+      var tema = temaDe(sala.fase === "23" ? "2" : sala.fase);
+      var tipos = tema.objetos || ["cofre"];
+      respaldo(el, tipos[fnv(semillaDe(app)) % tipos.length], 6, 0, 64, 64);
+    }
+    el.appendChild(rotulo(app.nombre, nivel.id));
+    return el;
+  }
+
+  function fragmentoEl(sala, app, cx, by, nivel) {
+    var el = app.href ? document.createElement("a") : document.createElement("span");
+    if (app.href) el.href = app.href;
+    el.className = "maz-obj";
+    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
+    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.zIndex = String(10000 + by);
+    el.title = app.nombre;
+    el.setAttribute("aria-label", app.nombre);
+    var sp = spriteEl(fragmentoDe(app.completadas), 2);
+    if (sp) {
+      sp.style.position = "absolute";
+      sp.style.left = "22px";
+      sp.style.top = "0";
+      el.appendChild(sp);
+      ponerEstado(el, app, 38, 0);
+    } else respaldo(el, "cristal", 6, 0, 64, 64);
+    el.appendChild(rotulo(app.nombre, nivel.id));
+    return el;
+  }
+
+  function cajaEl(sala, app, cx, by, nivel) {
+    var el = app.href ? document.createElement("a") : document.createElement("span");
+    if (app.href) el.href = app.href;
+    el.className = "maz-obj";
+    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
+    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.zIndex = String(10000 + by);
+    el.title = app.nombre;
+    el.setAttribute("aria-label", app.nombre);
+    var asp = aspecto(app);
+    var sp = spriteEl("desc/caja/" + (fnv(semillaDe(app)) % 2), 2);
+    if (sp) {
+      sp.style.position = "absolute";
+      sp.style.left = "14px";
+      sp.style.top = "16px";
+      el.appendChild(sp);
+      var ic = spriteEl(asp.icono, 2);
+      if (ic) {
+        ic.style.position = "absolute";
+        ic.style.left = "30px";
+        ic.style.top = "36px";
+        ic.style.zIndex = "2";
+        el.appendChild(ic);
+      }
+      ponerEstado(el, app, 46, 16);
+    } else respaldo(el, "caja", 6, 0, 64, 64);
+    el.appendChild(rotulo(app.nombre, nivel.id));
+    return el;
+  }
+
+  function minis(el, resto) {
+    var n = Math.min(3, resto.length);
+    for (var j = 0; j < n; j++) {
+      var sp = spriteEl(aspecto(resto[j]).mini, 1);
+      if (!sp) continue;
+      sp.style.position = "absolute";
+      sp.style.left = (8 + j * 18) + "px";
+      sp.style.top = (14 + (j % 2) * 8) + "px";
+      sp.style.zIndex = String(j + 1);
+      el.appendChild(sp);
+    }
+  }
+
+  function pilaEl(sala, resto, cx, by, nivel, racimo) {
+    var el = document.createElement("button");
+    el.type = "button";
+    el.className = "maz-pila";
+    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
+    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.zIndex = String(10000 + by);
+    el.setAttribute("aria-label", sala.nombre + ", +" + resto.length);
+    if (racimo) {
+      var sp = spriteEl("lanz/racimo-pila", 2);
+      if (sp) {
+        sp.style.position = "absolute";
+        sp.style.left = "6px";
+        sp.style.top = "0";
+        el.appendChild(sp);
+      }
+    } else if (!hayDibujo()) {
+      respaldo(el, "cofre", 6, 0, 64, 64);
+    }
+    minis(el, resto);
+    var gancho = spriteEl("pila/gancho", 1);
+    if (gancho) {
+      gancho.style.position = "absolute";
+      gancho.style.left = "50px";
+      gancho.style.top = "58px";
+      el.appendChild(gancho);
+    }
+    el.appendChild(etiqueta("+" + resto.length));
+    el.addEventListener("click", function () { abrirPila(sala.nombre, resto, el); });
+    return el;
+  }
+
+  function binRect(sala) {
+    return { x: sala.w - 68, y: sala.h - 60, w: 48, h: 48 };
+  }
+
+  function binEl(sala, resto, nivel) {
+    var r = binRect(sala);
+    var el = resto.length ? document.createElement("button") : document.createElement("span");
+    el.className = "maz-bin";
+    el.style.left = r.x + "px";
+    el.style.top = r.y + "px";
+    el.style.zIndex = "30000";
+    var sp = spriteEl("desc/contenedor/" + (resto.length ? "lleno" : "vacio"), 1.5);
+    if (sp) el.appendChild(sp);
+    else el.appendChild(spriteObjeto(resto.length ? "contenedor" : "chatarra"));
+    if (resto.length) {
+      el.type = "button";
+      el.setAttribute("aria-label", sala.nombre + ", +" + resto.length);
+      var et = etiqueta("+" + resto.length);
+      et.style.left = "4px";
+      et.style.top = "32px";
+      el.appendChild(et);
+      el.addEventListener("click", function () { abrirPila(sala.nombre, resto, el); });
+    } else el.setAttribute("aria-hidden", "true");
+    return el;
+  }
+
+  function fuenteEl(sala, pt) {
+    var cx = pt[0];
+    var by = pt[1];
+    var grupo = document.createElement("div");
+    grupo.setAttribute("aria-hidden", "true");
+    grupo.style.position = "absolute";
+    grupo.style.left = "0";
+    grupo.style.top = "0";
+    grupo.style.zIndex = String(10000 + by);
+    var halo = spriteEl("lanz/halo", 1.5);
+    if (halo) {
+      halo.classList.add("maz-halo-brillo");
+      halo.style.position = "absolute";
+      halo.style.left = (cx - sala.x - 36) + "px";
+      halo.style.top = (by - sala.y - 68) + "px";
+      grupo.appendChild(halo);
+    }
+    var fuente = spriteEl("lanz/fuente", 1.5);
+    if (fuente) {
+      fuente.style.position = "absolute";
+      fuente.style.left = (cx - sala.x - 24) + "px";
+      fuente.style.top = (by - sala.y - 72) + "px";
+      grupo.appendChild(fuente);
+    } else {
+      var s = document.createElement("span");
+      s.className = "maz-sprite";
+      s.style.left = (cx - sala.x - 32) + "px";
+      s.style.top = (by - sala.y - 64) + "px";
+      s.appendChild(spriteObjeto("cristal"));
+      grupo.appendChild(s);
+    }
+    return grupo;
+  }
+
+  function elegirFuente(sala, sl) {
+    var best = sl[0];
+    var mejor = Infinity;
+    var cx = sala.x + sala.w / 2;
+    for (var i = 0; i < sl.length; i++) {
+      var d = Math.abs(sl[i][0] - cx) + Math.abs(sl[i][1] - sala.y) * 0.5;
+      if (d < mejor) {
+        mejor = d;
+        best = sl[i];
+      }
+    }
+    return best;
+  }
+
+  function bestiaEl(sala, nivel) {
+    var info = CFG.BESTIAS[fnv(sala.fase) % CFG.BESTIAS.length];
+    var el = document.createElement("span");
+    el.className = "maz-bestia";
+    if (nivel.id === "ceniza") el.classList.add("maz-bestia-ceniza");
+    el.setAttribute("role", "img");
+    el.setAttribute("aria-label", info.nombre);
+    var x = MURO + MARGEN + 4 + (fnv(sala.fase + "b") % Math.max(1, sala.w - 60));
+    if (sala.fase === CFG.FASE_RECICLAJE) {
+      var bin = binRect(sala);
+      if (x + 28 > bin.x && x < bin.x + bin.w) x = Math.max(8, bin.x - 32);
+    }
+    el.style.left = x + "px";
+    el.style.top = (sala.h - 38) + "px";
+    var sp = spriteEl("bestia/" + info.id, 1.75);
+    if (sp) el.appendChild(sp);
+    else if (ARTE[info.id]) {
+      var cajaB = document.createElement("span");
+      cajaB.className = "maz-px";
+      cajaB.style.width = "28px";
+      cajaB.style.height = "28px";
+      cajaB.appendChild(spritePixel(ARTE[info.id]));
+      el.appendChild(cajaB);
+    }
+    var extra = nivel.id === "ceniza" ? "bestia/extra/zzz" : nivel.id === "forja" ? "bestia/extra/casco" : nivel.id === "faro" ? "bestia/extra/halo" : "";
+    if (extra && atlas && atlas.anchors && atlas.anchors["bestia/" + info.id]) {
+      var ov = spriteEl(extra, 1.75);
+      var an = atlas.anchors["bestia/" + info.id].cabeza;
+      var f = frame(extra);
+      if (ov && an && f) {
+        ov.style.position = "absolute";
+        ov.style.left = (an[0] * 1.75 - f.w * 1.75 / 2) + "px";
+        ov.style.top = (an[1] * 1.75 - f.h * 1.75) + "px";
+        el.appendChild(ov);
+      }
+    }
+    return el;
+  }
+
+  function luzEl(sala, nivel) {
+    if (nivel.id === "forja" || nivel.id === "faro") return null;
+    var luz = spriteEl(nivel.id + "/luz/charco", 1);
+    if (!luz) return null;
+    luz.classList.add("maz-parpadeo");
+    luz.style.position = "absolute";
+    luz.style.left = (sala.w / 2 - 16) + "px";
+    luz.style.top = "26px";
+    luz.style.zIndex = "2";
+    luz.style.animationDelay = ((fnv(sala.fase) % 13) / 10) + "s";
+    return luz;
+  }
+
+  function decoViva(sec, sala, nivel, decos) {
+    for (var i = 0; i < decos.length; i++) {
+      var d = decos[i];
+      var viva = (nivel.id === "brasa" && d.nombre === "brasero") || (nivel.id === "llama" && d.nombre === "aplique");
+      if (!viva) continue;
+      var sp = spriteEl(nivel.id + "/deco/" + d.nombre, 1);
+      if (!sp) continue;
+      sp.classList.add("maz-parpadeo");
+      sp.style.position = "absolute";
+      sp.style.left = d.x + "px";
+      sp.style.top = d.y + "px";
+      sp.style.zIndex = "3";
+      sp.style.animationDelay = ((fnv(sala.fase + d.nombre) % 10) / 10) + "s";
+      sec.appendChild(sp);
+    }
+  }
+
+  function particulas(sec, sala, nivel, n) {
+    var rnd = mulberry(fnv(sala.fase + "|p|" + nivel.id));
+    for (var i = 0; i < n; i++) {
+      var p = spriteEl(nivel.id + "/particula", 1);
+      if (!p) return;
+      p.classList.add("maz-mota");
+      p.style.position = "absolute";
+      p.style.left = Math.round(14 + rnd() * Math.max(8, sala.w - 28)) + "px";
+      p.style.top = Math.round(28 + rnd() * Math.max(8, sala.h * 0.55)) + "px";
+      p.style.zIndex = "3";
+      p.style.animationDelay = (rnd() * 2).toFixed(2) + "s";
+      sec.appendChild(p);
+    }
+  }
+
+  function crearSala(sala, nivel, puertas) {
     var sec = document.createElement("section");
     sec.className = "maz-sala";
-    if (tema.energia) sec.classList.add("maz-energia");
-    if (tema.reciclaje) sec.classList.add("maz-reciclaje");
-    if (tema.sinLimite) sec.classList.add("maz-sin-limite");
-    sec.style.gridColumn = "span " + span;
-    sec.style.setProperty("--sala-tinte", tema.tinte);
-    sec.style.setProperty("--sala-op", String(tema.opacidad));
+    sec.setAttribute("data-fase", sala.fase);
+    sec.style.left = sala.x + "px";
+    sec.style.top = sala.y + "px";
+    sec.style.width = sala.w + "px";
+    sec.style.height = sala.h + "px";
+    sec.style.zIndex = String(Math.round(sala.y) + 1);
     var titulo = document.createElement("h3");
-    titulo.id = "maz-" + sala.fase + "-" + indiceSala;
+    titulo.id = "maz-" + sala.fase;
     titulo.textContent = sala.nombre;
-    titulo.style.color = tema.titulo;
+    titulo.title = sala.nombre;
     sec.setAttribute("aria-labelledby", titulo.id);
-    if (tema.reciclaje) {
-      var chatarra = document.createElement("span");
-      chatarra.className = "maz-chatarra";
-      chatarra.setAttribute("aria-hidden", "true");
-      sec.appendChild(chatarra);
-    }
+    var decos = hayDibujo() ? planDeco(sala, nivel.id) : [];
+    sec.appendChild(dibujarFondo(sala, nivel, puertas, decos));
     sec.appendChild(titulo);
-    antorchas(sec, indiceSala);
-    var cosas = document.createElement("ul");
-    cosas.className = "maz-cosas";
-    var cupo = tema.sinLimite ? sala.apps.length : nivel.cupo;
-    var visibles = sala.apps.slice(0, cupo);
-    var sobra = sala.apps.length - visibles.length;
-    for (var i = 0; i < visibles.length; i++) cosas.appendChild(itemObjeto(visibles[i], tema.objetos[indice(visibles[i].id, tema.objetos.length)]));
-    if (sobra > 0) cosas.appendChild(itemPila(sala, tema, sobra));
-    sec.appendChild(cosas);
-    if (sala.bestias.length) {
-      var fauna = document.createElement("div");
-      fauna.className = "maz-fauna";
-      for (var j = 0; j < sala.bestias.length; j++) fauna.appendChild(ponerBestia(sala.bestias[j], indiceSala + j));
-      sec.appendChild(fauna);
+    var luz = luzEl(sala, nivel);
+    if (luz) sec.appendChild(luz);
+    decoViva(sec, sala, nivel, decos);
+    if (nivel.id === "forja" || nivel.id === "faro") particulas(sec, sala, nivel, 2);
+    if (nivel.id === "faro" && sala.fase === CFG.FASE_ENERGIA) {
+      var haz = spriteEl("faro/luz/haz", 1);
+      if (haz) {
+        haz.classList.add("maz-vaiven");
+        haz.style.position = "absolute";
+        haz.style.left = ((sala.w - 48) / 2) + "px";
+        haz.style.top = "0";
+        haz.style.zIndex = "2";
+        sec.appendChild(haz);
+      }
     }
+    if (sala.fase === CFG.FASE_ENERGIA) {
+      var sl = sala.pts.slice();
+      var fuente = elegirFuente(sala, sl);
+      sl = sl.filter(function (p) { return p !== fuente; });
+      sec.appendChild(fuenteEl(sala, fuente));
+      var asg = asignar(sala.apps, sl, 6);
+      sala.apps.forEach(function (app) {
+        if (asg.mapa[app.id]) sec.appendChild(fragmentoEl(sala, app, asg.mapa[app.id][0], asg.mapa[app.id][1], nivel));
+      });
+      if (asg.pila) sec.appendChild(pilaEl(sala, asg.resto, asg.pila[0], asg.pila[1], nivel, true));
+    } else if (sala.fase === CFG.FASE_RECICLAJE) {
+      var orden = ordenar(sala.apps);
+      var vis = orden.slice(0, Math.min(6, orden.length));
+      var resto = orden.slice(vis.length);
+      var cajas = asignar(vis, sala.pts, vis.length);
+      vis.forEach(function (app) {
+        if (cajas.mapa[app.id]) sec.appendChild(cajaEl(sala, app, cajas.mapa[app.id][0], cajas.mapa[app.id][1], nivel));
+      });
+      sec.appendChild(binEl(sala, resto, nivel));
+    } else {
+      var normal = asignar(sala.apps, sala.pts, nivel.cupo);
+      sala.apps.forEach(function (app) {
+        if (normal.mapa[app.id]) sec.appendChild(objetoEl(sala, app, normal.mapa[app.id][0], normal.mapa[app.id][1], nivel));
+      });
+      if (normal.pila) sec.appendChild(pilaEl(sala, normal.resto, normal.pila[0], normal.pila[1], nivel, false));
+    }
+    sec.appendChild(bestiaEl(sala, nivel));
     return sec;
   }
 
-  function dibujarSalas(salas, nivel, ancho) {
+  function escalaDe(ancho) {
+    if (!ancho || ancho >= 375) return 1;
+    return ancho / 375;
+  }
+
+  function dibujar(salas, nivel, ancho) {
     salasEl.replaceChildren();
     if (!salas.length) {
-      salasEl.style.display = "flex";
+      escalaEl.style.height = "auto";
+      salasEl.style.transform = "none";
+      salasEl.style.height = "auto";
+      salasEl.style.width = "100%";
       var vacio = document.createElement("p");
       vacio.className = "maz-vacio";
       vacio.textContent = CFG.TEXTOS.VACIO;
       salasEl.appendChild(vacio);
       return;
     }
-    salasEl.style.display = "";
-    var g = grilla(salas.length, ancho);
-    salasEl.style.gridTemplateColumns = "repeat(" + g.cols + ",minmax(0,1fr))";
-    salasEl.style.gridTemplateRows = "repeat(" + g.filas + ",minmax(0,1fr))";
-    salasEl.style.gap = CFG.GAP + "px";
-    for (var i = 0; i < salas.length; i++) salasEl.appendChild(crearSala(salas[i], g.spans[i], nivel, i));
+    var plan = preparar(salas, nivel);
+    var e = escalaDe(ancho);
+    salasEl.style.width = "375px";
+    salasEl.style.height = plan.alto + "px";
+    salasEl.style.transform = "scale(" + e + ")";
+    salasEl.style.transformOrigin = "top center";
+    escalaEl.style.height = Math.ceil(plan.alto * e) + "px";
+    for (var i = 0; i < plan.corr.segmentos.length; i++) {
+      var pas = pasilloEl(plan.corr.segmentos[i], nivel);
+      if (pas) salasEl.appendChild(pas);
+    }
+    for (i = 0; i < plan.salas.length; i++) salasEl.appendChild(crearSala(plan.salas[i], nivel, plan.corr.puertas));
   }
 
   function aplicarNivel(nivel) {
@@ -495,7 +1426,8 @@
     html.setAttribute("data-nivel", nivel.id);
     html.style.setProperty("--maz-fondo", nivel.fondo);
     html.style.setProperty("--maz-fuego", nivel.fuego);
-    if (metaTema) metaTema.setAttribute("content", nivel.fondo);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", nivel.fondo);
   }
 
   function limpiarNivel() {
@@ -503,16 +1435,19 @@
     html.removeAttribute("data-nivel");
     html.style.removeProperty("--maz-fondo");
     html.style.removeProperty("--maz-fuego");
-    if (metaTema) metaTema.setAttribute("content", temaOriginal);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && temaOriginal) meta.setAttribute("content", temaOriginal);
   }
 
+  var temaOriginal = "";
+
   function firmaDe(salas, nivel, ancho) {
-    var partes = [cubo(ancho), nivel.id];
+    var partes = [String(ancho), nivel.id, atlasEstado];
     for (var i = 0; i < salas.length; i++) {
       var ids = [];
       for (var j = 0; j < salas[i].apps.length; j++) {
         var app = salas[i].apps[j];
-        ids.push(app.id + "@" + app.href + "@" + app.nombre);
+        ids.push([app.id, app.href, app.nombre, app.estado, app.completadas, app.emoji, app.boton, app.descripcion].join("@"));
       }
       partes.push(salas[i].fase + ":" + ids.join(","));
     }
@@ -523,18 +1458,15 @@
     if (!raiz) return;
     var salas = leerSalas();
     var nivel = nivelDe(finalizados(salas));
-    var ancho = raiz.clientWidth || window.innerWidth;
-    var firma = firmaDe(salas, nivel, ancho);
     aplicarNivel(nivel);
     placa.textContent = CFG.TEXTOS.MAZMORRA + " · " + nivel.nombre;
-    if (!forzar && firma === firmaActual) {
-      medirRayos();
-      return;
-    }
+    if (atlasEstado === "cargando") return;
+    var ancho = (lienzoEl && lienzoEl.clientWidth) || window.innerWidth;
+    var firma = firmaDe(salas, nivel, ancho);
+    if (!forzar && firma === firmaActual) return;
     firmaActual = firma;
     if (dialogoPila && dialogoPila.hasAttribute("open")) cerrarDialogo(dialogoPila);
-    dibujarSalas(salas, nivel, ancho);
-    requestAnimationFrame(medirRayos);
+    dibujar(salas, nivel, ancho);
   }
 
   function programar() {
@@ -546,310 +1478,55 @@
     });
   }
 
-  function relativo(el, base) {
-    var r = el.getBoundingClientRect();
-    return {
-      left: r.left - base.left,
-      top: r.top - base.top,
-      right: r.right - base.left,
-      bottom: r.bottom - base.top,
-      width: r.width,
-      height: r.height
-    };
+  function alResize() {
+    if (!encendida) return;
+    clearTimeout(relojResize);
+    relojResize = setTimeout(function () { if (encendida) pintar(false); }, 150);
   }
 
-  function centroRect(r) {
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  function asset(nombre) {
+    return "img/mazmorra/" + nombre + "?v=" + CFG.VERSION;
   }
 
-  function punto(a, b, t) {
-    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  function cargarImagen(src) {
+    return new Promise(function (ok, mal) {
+      var img = new Image();
+      img.onload = function () { ok(img); };
+      img.onerror = function () { mal(); };
+      img.src = src;
+    });
   }
 
-  function salir(desde, hacia, rect) {
-    var dx = hacia.x - desde.x;
-    var dy = hacia.y - desde.y;
-    var t = Infinity;
-    if (dx > 0.001) t = Math.min(t, (rect.right - desde.x) / dx);
-    else if (dx < -0.001) t = Math.min(t, (rect.left - desde.x) / dx);
-    if (dy > 0.001) t = Math.min(t, (rect.bottom - desde.y) / dy);
-    else if (dy < -0.001) t = Math.min(t, (rect.top - desde.y) / dy);
-    if (!isFinite(t) || t < 0) return 1;
-    return t;
-  }
-
-  function trazo(a, b, ancho, op, fino) {
-    var linea = document.createElementNS(SVGNS, "line");
-    linea.setAttribute("x1", a.x.toFixed(1));
-    linea.setAttribute("y1", a.y.toFixed(1));
-    linea.setAttribute("x2", b.x.toFixed(1));
-    linea.setAttribute("y2", b.y.toFixed(1));
-    linea.setAttribute("stroke", "var(--maz-fuego)");
-    linea.setAttribute("stroke-width", String(ancho));
-    linea.setAttribute("stroke-linecap", "round");
-    if (!fino) linea.setAttribute("opacity", String(op));
-    if (fino) linea.setAttribute("class", "maz-rayo");
-    return linea;
-  }
-
-  function medirRayos() {
-    if (!raiz) return;
-    var svg = raiz.querySelector(".maz-rayos");
-    var lienzo = raiz.querySelector(".maz-lienzo");
-    if (!svg || !lienzo) return;
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-    var origen = raiz.querySelector(".maz-energia");
-    if (!origen) return;
-    var base = lienzo.getBoundingClientRect();
-    if (base.width < 1 || base.height < 1) return;
-    svg.setAttribute("viewBox", "0 0 " + base.width.toFixed(1) + " " + base.height.toFixed(1));
-    svg.setAttribute("preserveAspectRatio", "none");
-    var oRect = relativo(origen, base);
-    var oc = centroRect(oRect);
-    var otros = raiz.querySelectorAll(".maz-sala:not(.maz-energia)");
-    for (var i = 0; i < otros.length; i++) {
-      var dRect = relativo(otros[i], base);
-      var dc = centroRect(dRect);
-      var t0 = salir(oc, dc, oRect);
-      var t1 = salir(dc, oc, dRect);
-      var p0 = punto(oc, dc, Math.min(0.98, Math.max(0.02, t0 - CFG.RAYO_STUB)));
-      var p1 = punto(dc, oc, Math.min(0.98, Math.max(0.02, t1 - CFG.RAYO_STUB)));
-      svg.appendChild(trazo(p0, p1, CFG.RAYO_ANCHO, CFG.RAYO_OPACIDAD, false));
-      svg.appendChild(trazo(p0, p1, CFG.RAYO_FINO, 1, true));
-      svg.appendChild(nodo(p0));
-      svg.appendChild(nodo(p1));
-    }
-  }
-
-  function nodo(p) {
-    var c = document.createElementNS(SVGNS, "circle");
-    c.setAttribute("cx", p.x.toFixed(1));
-    c.setAttribute("cy", p.y.toFixed(1));
-    c.setAttribute("r", String(CFG.RAYO_NODO));
-    c.setAttribute("fill", "var(--maz-fuego)");
-    c.setAttribute("class", "maz-rayo");
-    return c;
-  }
-
-  function reduceMov() {
-    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  }
-
-  function crearNubes(capa, ancho, reduce) {
-    capa.replaceChildren();
-    var niebla = CFG.NIEBLA;
-    var n = ancho <= CFG.ANCHO_MOVIL ? niebla.NUBES_MOVIL : niebla.NUBES;
-    var dpr = Math.min(window.devicePixelRatio || 1, ancho <= CFG.ANCHO_MOVIL ? niebla.DPR_MOVIL : niebla.DPR_MAX);
-    for (var i = 0; i < n; i++) {
-      var nube = {
-        x: Math.random(),
-        y: Math.random(),
-        r: niebla.RADIO_MIN + Math.random() * niebla.RADIO_VAR,
-        v: (niebla.VEL_MIN + Math.random() * niebla.VEL_VAR) * (i % 2 ? 1 : -1)
-      };
-      var radio = nube.r * Math.max(ancho, niebla.ANCHO_MIN);
-      var lado = Math.ceil(2 * radio * dpr) + 2;
-      var cv = document.createElement("canvas");
-      cv.width = lado;
-      cv.height = lado;
-      var ctx = cv.getContext("2d");
-      if (ctx) {
-        var g = ctx.createRadialGradient(lado / 2, lado / 2, 0, lado / 2, lado / 2, radio * dpr);
-        g.addColorStop(0, niebla.NUBE_CENTRO);
-        g.addColorStop(1, niebla.NUBE_BORDE);
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, lado, lado);
-      }
-      var px = lado / dpr;
-      cv.style.width = px + "px";
-      cv.style.height = px + "px";
-      cv.style.position = "absolute";
-      cv.style.left = (-px / 2) + "px";
-      cv.style.top = (-px / 2) + "px";
-      var mov = document.createElement("div");
-      mov.className = "maz-nube";
-      mov.style.top = (nube.y * 100) + "%";
-      if (reduce) {
-        mov.style.transform = "translateX(" + (nube.x * 100) + "%)";
-      } else {
-        var dur = niebla.RECORRIDO / Math.abs(nube.v);
-        var q = (nube.x + 0.4) / niebla.RECORRIDO;
-        mov.classList.add("maz-nube-viva");
-        mov.style.animationDuration = dur.toFixed(0) + "ms";
-        mov.style.animationDelay = (-(nube.v > 0 ? q : 1 - q) * dur).toFixed(0) + "ms";
-        mov.style.animationDirection = nube.v > 0 ? "normal" : "reverse";
-      }
-      mov.appendChild(cv);
-      capa.appendChild(mov);
-    }
-  }
-
-  function destruirAmbiente() {
-    var viejo = ambiente;
-    ambiente = null;
-    if (!viejo) return;
-    if (viejo.raf) cancelAnimationFrame(viejo.raf);
-    if (viejo.io) viejo.io.disconnect();
-    if (viejo.ro) viejo.ro.disconnect();
-    document.removeEventListener("visibilitychange", viejo.alVer);
-    document.documentElement.classList.remove("maz-pausa");
-  }
-
-  function iniciarAmbiente() {
-    destruirAmbiente();
-    var capa = raiz.querySelector(".maz-niebla");
-    if (!capa) return;
-    capa.replaceChildren();
-    var nubes = document.createElement("div");
-    nubes.className = "maz-nubes";
-    var cv = document.createElement("canvas");
-    cv.className = "maz-brasas";
-    capa.appendChild(nubes);
-    capa.appendChild(cv);
-    var ctx = cv.getContext("2d", { alpha: true });
-    var niebla = CFG.NIEBLA;
-    var dpr = 1;
-    var w = 0;
-    var h = 0;
-    var prev = [];
-    var bucket = -1;
-    var reduce = reduceMov();
-    var brasas = [];
-    var ultimo = 0;
-    var estado = { raf: 0, io: null, ro: null, alVer: null };
-    ambiente = estado;
-
-    function sembrar() {
-      var n = (raiz.clientWidth || w) <= CFG.ANCHO_MOVIL ? niebla.BRASAS_MOVIL : niebla.BRASAS;
-      brasas = [];
-      for (var i = 0; i < n; i++) {
-        brasas.push({
-          x: Math.random(),
-          y: Math.random(),
-          s: niebla.BRASA_S_MIN + Math.random() * niebla.BRASA_S_VAR,
-          v: niebla.BRASA_V_MIN + Math.random() * niebla.BRASA_V_VAR,
-          f: Math.random() * Math.PI * 2
-        });
-      }
-    }
-
-    function redimensionar() {
-      var rect = capa.getBoundingClientRect();
-      w = rect.width;
-      h = rect.height;
-      dpr = Math.min(window.devicePixelRatio || 1, (raiz.clientWidth || window.innerWidth) <= CFG.ANCHO_MOVIL ? niebla.DPR_MOVIL : niebla.DPR_MAX);
-      cv.width = Math.max(1, Math.floor(w * dpr));
-      cv.height = Math.max(1, Math.floor(h * dpr));
-      if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      prev = [];
-      var b = Math.round(w / niebla.NUBE_PASO);
-      if (b !== bucket) {
-        bucket = b;
-        crearNubes(nubes, w, reduce);
-      }
-      if (!brasas.length) sembrar();
-    }
-
-    function activo() {
-      return encendida && ambiente === estado && !reduce && !document.hidden && enVista;
-    }
-
-    function dibujar(t) {
-      estado.raf = 0;
-      if (ambiente !== estado || !ctx) return;
-      if (!w || !h) {
-        if (activo()) estado.raf = requestAnimationFrame(dibujar);
-        return;
-      }
-      var dt = ultimo ? Math.min(niebla.DT_MAX, t - ultimo) : niebla.DT_INICIAL;
-      ultimo = t;
-      var i;
-      for (i = 0; i < prev.length; i += 4) ctx.clearRect(prev[i], prev[i + 1], prev[i + 2], prev[i + 3]);
-      var sig = [];
-      for (i = 0; i < brasas.length; i++) {
-        var br = brasas[i];
-        if (!reduce) {
-          br.y -= br.v * dt;
-          br.f += dt * niebla.BRASA_FASE;
-          if (br.y < -niebla.BRASA_MARGEN) {
-            br.y = 1 + niebla.BRASA_MARGEN;
-            br.x = Math.random();
-          }
-        }
-        var alfa = niebla.BRASA_ALFA_MIN + niebla.BRASA_ALFA_VAR * Math.sin(br.f);
-        var cx = br.x * w + Math.sin(br.f) * niebla.BRASA_DERIVA;
-        var cy = br.y * h;
-        var verde = niebla.BRASA_VERDE_MIN + Math.floor(niebla.BRASA_VERDE_VAR * alfa);
-        ctx.fillStyle = "rgba(" + niebla.BRASA_ROJO + "," + verde + "," + niebla.BRASA_AZUL + "," + alfa.toFixed(3) + ")";
-        ctx.beginPath();
-        ctx.arc(cx, cy, br.s, 0, Math.PI * 2);
-        ctx.fill();
-        var m = br.s + niebla.BRASA_HOLGURA;
-        sig.push(Math.floor(cx - m), Math.floor(cy - m), Math.ceil(2 * m) + 1, Math.ceil(2 * m) + 1);
-      }
-      prev = sig;
-      if (activo()) estado.raf = requestAnimationFrame(dibujar);
-    }
-
-    function arrancar() {
-      if (estado.raf || ambiente !== estado || !ctx) return;
-      if (!activo() && !reduce) return;
-      ultimo = 0;
-      estado.raf = requestAnimationFrame(dibujar);
-    }
-
-    function alVer() {
-      if (ambiente !== estado) return;
-      var pausa = document.hidden || !enVista || reduce;
-      document.documentElement.classList.toggle("maz-pausa", pausa);
-      if (activo() || reduce) arrancar();
-    }
-
-    estado.alVer = alVer;
-    redimensionar();
-    if (window.ResizeObserver) {
-      estado.ro = new ResizeObserver(function () { redimensionar(); });
-      estado.ro.observe(capa);
-    }
-    if (window.IntersectionObserver) {
-      estado.io = new IntersectionObserver(function (entries) {
-        enVista = false;
-        for (var i = 0; i < entries.length; i++) if (entries[i].isIntersecting) enVista = true;
-        alVer();
-      });
-      estado.io.observe(capa);
-    }
-    document.addEventListener("visibilitychange", alVer);
-    alVer();
-  }
-
-  function asegurarRaiz() {
-    if (raiz && raiz.isConnected) return;
-    raiz = document.createElement("div");
-    raiz.className = "mazmorra";
-    placa = document.createElement("p");
-    placa.className = "maz-placa";
-    var lienzo = document.createElement("div");
-    lienzo.className = "maz-lienzo";
-    salasEl = document.createElement("div");
-    salasEl.className = "maz-salas";
-    var svg = document.createElementNS(SVGNS, "svg");
-    svg.setAttribute("class", "maz-rayos");
-    svg.setAttribute("aria-hidden", "true");
-    var niebla = document.createElement("div");
-    niebla.className = "maz-niebla";
-    niebla.setAttribute("aria-hidden", "true");
-    lienzo.appendChild(salasEl);
-    lienzo.appendChild(svg);
-    lienzo.appendChild(niebla);
-    raiz.appendChild(placa);
-    raiz.appendChild(lienzo);
-    document.querySelector("main").appendChild(raiz);
+  function cargarAtlas() {
+    var json = fetch(asset("mazmorra-atlas.json")).then(function (r) {
+      if (!r.ok) throw new Error("atlas");
+      return r.json();
+    });
+    var img = cargarImagen(asset("mazmorra-atlas.webp")).catch(function () {
+      return cargarImagen(asset("mazmorra-atlas.png"));
+    });
+    Promise.all([json, img]).then(function (res) {
+      atlas = res[0];
+      atlasImg = res[1];
+      atlasCss = "url(\"" + atlasImg.src + "\")";
+      atlasEstado = "listo";
+      if (encendida) pintar(true);
+    }).catch(function () {
+      atlas = null;
+      atlasImg = null;
+      atlasEstado = "fallo";
+      if (encendida) pintar(true);
+    });
   }
 
   function cerrarFicha() {
     var b = document.querySelector(".card.abierta .cerrar");
     if (b) b.click();
+  }
+
+  function sincronizarPausa() {
+    var quieto = encendida && (document.hidden || !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches));
+    document.documentElement.classList.toggle("maz-pausa", quieto);
   }
 
   function encender() {
@@ -858,20 +1535,26 @@
     cerrarFicha();
     if (fases) fases.hidden = true;
     asegurarRaiz();
+    sincronizarPausa();
     pintar(true);
-    iniciarAmbiente();
   }
 
   function apagar() {
     var estaba = encendida || document.documentElement.classList.contains("mazmorra");
     encendida = false;
-    enVista = true;
     document.documentElement.classList.remove("mazmorra", "maz-pausa");
-    destruirAmbiente();
     limpiarNivel();
+    clearTimeout(relojResize);
+    if (observador) {
+      observador.disconnect();
+      observador = null;
+    }
     if (raiz) {
       raiz.remove();
       raiz = null;
+      lienzoEl = null;
+      escalaEl = null;
+      salasEl = null;
     }
     firmaActual = "";
     if (fases) fases.hidden = false;
@@ -902,22 +1585,24 @@
     else d.removeAttribute("open");
   }
 
-  function abrirPila(sala, disparador) {
-    tituloPila.textContent = sala.nombre;
+  function filaPila(app) {
+    var li = document.createElement("li");
+    var nodo = app.href ? document.createElement("a") : document.createElement("span");
+    if (!app.href) nodo.className = "maz-fila";
+    if (app.href) nodo.href = app.href;
+    var ic = spriteEl(aspecto(app).icono, 2);
+    if (ic) nodo.appendChild(ic);
+    var tx = document.createElement("span");
+    tx.textContent = app.nombre;
+    nodo.appendChild(tx);
+    li.appendChild(nodo);
+    return li;
+  }
+
+  function abrirPila(nombre, apps, disparador) {
+    tituloPila.textContent = nombre;
     listaPila.replaceChildren();
-    for (var i = 0; i < sala.apps.length; i++) {
-      var app = sala.apps[i];
-      var li = document.createElement("li");
-      if (app.href) {
-        var a = document.createElement("a");
-        a.href = app.href;
-        a.textContent = rotulo(app);
-        li.appendChild(a);
-      } else {
-        li.textContent = rotulo(app);
-      }
-      listaPila.appendChild(li);
-    }
+    for (var i = 0; i < apps.length; i++) listaPila.appendChild(filaPila(apps[i]));
     dialogoPila._volver = disparador;
     abrirDialogo(dialogoPila);
   }
@@ -970,7 +1655,6 @@
       guardarOn(caja.checked);
       aplicar(caja.checked);
     });
-
     dialogoPila = dialogobase("maz-pila-titulo");
     tituloPila = document.createElement("h2");
     tituloPila.id = "maz-pila-titulo";
@@ -1002,12 +1686,45 @@
     acciones.appendChild(boton);
   }
 
+  function asegurarRaiz() {
+    if (raiz && raiz.isConnected) return;
+    raiz = document.createElement("div");
+    raiz.className = "mazmorra";
+    placa = document.createElement("p");
+    placa.className = "maz-placa";
+    lienzoEl = document.createElement("div");
+    lienzoEl.className = "maz-lienzo";
+    escalaEl = document.createElement("div");
+    escalaEl.className = "maz-escala";
+    salasEl = document.createElement("div");
+    salasEl.className = "maz-mundo";
+    escalaEl.appendChild(salasEl);
+    lienzoEl.appendChild(escalaEl);
+    raiz.appendChild(placa);
+    raiz.appendChild(lienzoEl);
+    document.querySelector("main").appendChild(raiz);
+    if (window.ResizeObserver) {
+      observador = new ResizeObserver(alResize);
+      observador.observe(lienzoEl);
+    }
+  }
+
   function observar() {
     if (fases && window.MutationObserver) {
-      new MutationObserver(function () { programar(); }).observe(fases, { subtree: true, childList: true });
+      new MutationObserver(function () { programar(); }).observe(fases, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["data-proyecto", "data-id"]
+      });
     }
     document.addEventListener("portafolio:render", programar);
-    window.addEventListener("resize", programar);
+    window.addEventListener("resize", alResize);
+    document.addEventListener("visibilitychange", sincronizarPausa);
+    if (window.matchMedia) {
+      var mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if (mq.addEventListener) mq.addEventListener("change", sincronizarPausa);
+    }
     window.addEventListener("storage", function (e) {
       if (e.key !== CFG.CLAVE_MAZMORRA && e.key !== null) return;
       var on = leerOn();
@@ -1018,11 +1735,12 @@
 
   function iniciar() {
     fases = document.querySelector("main .fases");
-    metaTema = document.querySelector('meta[name="theme-color"]');
-    temaOriginal = metaTema ? (metaTema.getAttribute("content") || "") : "";
+    var meta = document.querySelector('meta[name="theme-color"]');
+    temaOriginal = meta ? (meta.getAttribute("content") || "") : "";
     crearDialogos();
     montarBoton();
     observar();
+    cargarAtlas();
     if (leerOn()) encender();
   }
 
