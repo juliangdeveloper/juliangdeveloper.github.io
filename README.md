@@ -4,7 +4,7 @@ Juegos y herramientas que se abren en el navegador, sin instalar.
 
 **[Abrir el portafolio](https://juliangdeveloper.github.io/)**
 
-<img src="docs/screenshot.png" alt="Portafolio con las tarjetas de los proyectos" width="320">
+<img src="img/portafolio.png" alt="Portafolio con las tarjetas de los proyectos" width="320">
 
 ## Cómo se usa
 
