@@ -1,42 +1,80 @@
 (function () {
   "use strict";
-  var FASES = ["Idea", "Definición", "Diseño", "Construcción", "Validación", "Lanzamiento"];
-  var ESTADOS = ["Pendiente", "En curso", "En pausa", "En revisión", "Completada"];
-  var TOTAL = 6;
-  var MAX_OBJETIVO = 140;
+  var CFG = window.PORTAFOLIO_CONFIG;
+  var META = CFG.META;
+  var FASES = CFG.FASES;
+  var ESTADOS = CFG.ESTADOS;
+  var TOTAL = META.FASES_TOTAL;
   var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
-  var PREFIX = "meta.v1.";
+  var PREFIX = CFG.CLAVE_META;
+  var CONTROL_RE = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g;
 
   function entero(n, lo, hi) {
     return typeof n === "number" && isFinite(n) && Math.floor(n) === n && n >= lo && n <= hi;
   }
 
-  function limpiarTexto(s) {
+  function limpiarTexto(s, max) {
     if (typeof s !== "string") return "";
-    var t = s.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g, " ").replace(/\s+/g, " ").trim();
+    var t = s.replace(CONTROL_RE, " ").replace(/\s+/g, " ").trim();
     var chars = Array.from(t);
-    if (chars.length > MAX_OBJETIVO) t = chars.slice(0, MAX_OBJETIVO - 1).join("").trim() + "…";
+    if (chars.length > max) t = chars.slice(0, max - 1).join("").trim() + "…";
     return t;
   }
 
+  function objeto(o) {
+    return !!o && typeof o === "object" && !Array.isArray(o);
+  }
+
+  function nombreStat(it) {
+    var crudo = typeof it.stat === "string" ? it.stat : typeof it.id === "string" ? it.id : "";
+    var t = crudo.replace(CONTROL_RE, " ").replace(/\s+/g, " ").trim();
+    var n = Array.from(t).length;
+    return n >= 1 && n <= CFG.STAT_NOMBRE_MAX ? t : "";
+  }
+
+  function leerAportes(lista) {
+    if (!Array.isArray(lista)) return [];
+    var mapa = {};
+    var orden = [];
+    for (var j = 0; j < lista.length; j++) {
+      var it = lista[j];
+      if (!objeto(it)) continue;
+      var stat = nombreStat(it);
+      var exp = it.exp !== undefined ? it.exp : it.aporte;
+      var fuente = it.fuente;
+      if (!stat || !entero(exp, CFG.EXP_MIN, CFG.EXP_MAX) || META.FUENTES.indexOf(fuente) < 0) continue;
+      var clave = stat + "\n" + fuente;
+      if (!mapa[clave]) {
+        mapa[clave] = { stat: stat, exp: 0, fuente: fuente };
+        orden.push(clave);
+      }
+      mapa[clave].exp = Math.min(CFG.EXP_MAX, mapa[clave].exp + exp);
+    }
+    return orden.map(function (k) { return mapa[k]; });
+  }
+
   function leerProyecto(record, slug) {
-    if (!record || typeof record !== "object" || Array.isArray(record)) return null;
-    if (record.v !== 1 || record.slug !== slug) return null;
+    if (!objeto(record)) return null;
+    if (record.v !== undefined && record.v !== META.V) return null;
+    if (record.slug !== undefined && record.slug !== slug) return null;
     var p = record.proyecto;
-    if (!p || typeof p !== "object" || Array.isArray(p)) return null;
-    if (!entero(p.fase, 1, 7) || !entero(p.fase_estado, 0, 4) || !entero(p.fases_completadas, 0, TOTAL)) return null;
+    if (!objeto(p) || !entero(p.fase, META.FASE_MIN, META.FASE_MAX)) return null;
+    var estado = entero(p.fase_estado, META.ESTADO_MIN, META.ESTADO_MAX) ? p.fase_estado : META.ESTADO_DEFECTO;
+    var completadas = entero(p.fases_completadas, 0, TOTAL) ? p.fases_completadas : Math.min(TOTAL, p.fase - 1);
     return {
       fase: p.fase,
-      estado: p.fase_estado,
-      completadas: p.fases_completadas,
-      objetivo: limpiarTexto(p.objetivo)
+      estado: estado,
+      completadas: completadas,
+      objetivo: limpiarTexto(p.objetivo, META.OBJETIVO_MAX),
+      bloqueada: p.bloqueada === true,
+      aportes: leerAportes(p.aportes)
     };
   }
 
   function leerRegistro(slug) {
     var raw = null;
     try { raw = window.localStorage.getItem(PREFIX + slug); } catch (e) { return null; }
-    if (typeof raw !== "string" || raw.length === 0 || raw.length > 200000) return null;
+    if (typeof raw !== "string" || raw.length === 0 || raw.length > META.CRUDO_MAX) return null;
     try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
@@ -49,7 +87,7 @@
     var linea = document.createElement("p");
     linea.className = "proyecto-fase";
     if (descartada) {
-      linea.textContent = "Descartada · " + info.completadas + "/" + TOTAL + " fases";
+      linea.textContent = FASES[META.FASE_MAX - 1] + " · " + info.completadas + "/" + TOTAL + " fases";
     } else {
       linea.textContent = "Fase " + info.fase + "/" + TOTAL + " · " + FASES[info.fase - 1] + " · " + ESTADOS[info.estado];
       box.classList.add("estado-" + info.estado);
@@ -80,7 +118,9 @@
   }
 
   function firma(info) {
-    return info ? [info.fase, info.estado, info.completadas, info.objetivo].join("|") : "";
+    if (!info) return "";
+    var ap = info.aportes.map(function (a) { return a.stat + ":" + a.fuente + ":" + a.exp; }).join("+");
+    return [info.fase, info.estado, info.completadas, info.objetivo, info.bloqueada ? "b" : "", ap].join("|");
   }
 
   function marcarPausa(card, info) {
@@ -89,7 +129,7 @@
 
   function ubicar(card, info) {
     if (card.classList.contains("abierta")) return;
-    var fase = info && info.fase >= 1 && info.fase <= 7 ? String(info.fase) : "0";
+    var fase = String(info ? info.fase : META.FASE_DEFECTO);
     var grid = document.querySelector('.fase[data-fase="' + fase + '"] .grid');
     if (grid && card.parentNode !== grid) grid.appendChild(card);
   }
@@ -140,8 +180,11 @@
   }
 
   function leerInfo(slug) {
-    return leerProyecto(leerRegistro(slug), slug);
+    if (!SLUG_RE.test(slug || "")) return null;
+    try { return leerProyecto(leerRegistro(slug), slug); } catch (e) { return null; }
   }
+
+  window.PORTAFOLIO_META = Object.freeze({ leer: leerInfo, slugValido: function (s) { return SLUG_RE.test(s || ""); } });
 
   function refrescar(slug) {
     var cards = tarjetas(slug);

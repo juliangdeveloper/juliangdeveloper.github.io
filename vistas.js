@@ -282,6 +282,7 @@
   }
 
   function alTecla(e) {
+    if (e.target && e.target.closest && e.target.closest("dialog[open]")) return;
     var abierta = document.querySelector(".card.abierta");
     if (e.key === "Escape") {
       if (!abierta) return;
