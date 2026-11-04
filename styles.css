@@ -201,20 +201,17 @@ html.mazmorra footer p{margin:0}
 .maz-sala canvas,.maz-pasillo{position:absolute;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}
 .maz-sala h3{position:absolute;z-index:50;left:12px;top:6px;right:44px;margin:0;font-size:11px;font-weight:700;line-height:1.15;color:#f0e0cc;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .maz-px{display:block;background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;flex:none}
-.maz-obj,.maz-pila,.maz-bin,.maz-fuente{position:absolute;width:76px;height:94px;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-decoration:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.maz-obj,.maz-bin,.maz-fuente{position:absolute;width:76px;height:94px;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-decoration:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .maz-bin{width:48px;height:48px}
 .maz-fuente{width:72px;height:80px;overflow:hidden}
-.maz-pila{overflow:hidden}
-.maz-obj:focus-visible,.maz-pila:focus-visible,.maz-bin:focus-visible,.maz-fuente:focus-visible,.maz-trono:focus-visible,.maz-stat:focus-visible{outline:2px solid var(--maz-fuego,#ffb53a);outline-offset:1px}
+.maz-obj:focus-visible,.maz-bin:focus-visible,.maz-fuente:focus-visible,.maz-trono:focus-visible,.maz-stat:focus-visible{outline:2px solid var(--maz-fuego,#ffb53a);outline-offset:1px}
 .maz-estado-0{animation:maz-pulso-suave 4.8s ease-in-out infinite}
 .maz-estado-1{animation:maz-bote 3.2s ease-in-out infinite}
 .maz-estado-3{animation:maz-pulso-suave 2.4s ease-in-out infinite}
 .maz-estado-4,.maz-fuente{animation:maz-brillo 2.8s ease-in-out infinite}
-.maz-pila{animation:maz-bote 3.6s ease-in-out infinite}
 .maz-bloqueada{animation:none;filter:grayscale(.45)}
-.maz-candado,.maz-pila-sprite{display:block;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}
+.maz-candado{display:block;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}
 .maz-candado{position:absolute;z-index:6;left:22px;top:16px;width:32px;height:32px}
-.maz-pila-sprite{position:absolute;left:22px;top:18px;width:32px;height:32px}
 .maz-marca{margin-left:auto;color:#e6c98a;font-size:.82rem;font-weight:700}
 .aviso-meta-texto{margin:8px 0 0;color:var(--dim);font-size:.95rem;line-height:1.45}
 .aviso-meta-acciones{flex-wrap:wrap;margin-top:16px}
@@ -238,6 +235,7 @@ html.mazmorra footer p{margin:0}
 .maz-trono-cuerpo .maz-ayuda{flex:none;margin:8px 0}
 .maz-trono-hoja .hoja-acciones{flex:none;margin-top:10px}
 .maz-stats{flex:1 1 auto;min-height:0;list-style:none;margin:0;padding:2px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));align-content:start;gap:6px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.maz-stats.maz-mas{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 48px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 48px),transparent)}
 .maz-stat{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 6px;align-items:center;gap:4px 8px;min-height:44px;padding:6px 8px;border:2px solid #070304;background:#22150f;color:#f6efe4;text-align:left;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 2px 0 #4a3426,inset 0 -2px 0 #120a07}
 .maz-stat:active{transform:translateY(1px)}
 .maz-stat-nombre{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
@@ -283,9 +281,9 @@ html.mazmorra footer p{margin:0}
 @keyframes maz-bote{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 @keyframes maz-brillo{0%,100%{opacity:.8}50%{opacity:1}}
 @keyframes maz-trono-frames{0%,49.999%{background-position:0 0}50%,100%{background-position:-64px 0}}
-html.maz-pausa .maz-parpadeo,html.maz-pausa .maz-halo-brillo,html.maz-pausa .maz-vaiven,html.maz-pausa .maz-mota,html.maz-pausa .maz-estado-0,html.maz-pausa .maz-estado-1,html.maz-pausa .maz-estado-3,html.maz-pausa .maz-estado-4,html.maz-pausa .maz-pila,html.maz-pausa .maz-fuente,html.maz-pausa .maz-trono-sprite,html.maz-pausa .maz-nivel-actual{animation-play-state:paused}
+html.maz-pausa .maz-parpadeo,html.maz-pausa .maz-halo-brillo,html.maz-pausa .maz-vaiven,html.maz-pausa .maz-mota,html.maz-pausa .maz-estado-0,html.maz-pausa .maz-estado-1,html.maz-pausa .maz-estado-3,html.maz-pausa .maz-estado-4,html.maz-pausa .maz-fuente,html.maz-pausa .maz-trono-sprite,html.maz-pausa .maz-nivel-actual{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){
-.maz-parpadeo,.maz-halo-brillo,.maz-vaiven,.maz-mota,.maz-estado-0,.maz-estado-1,.maz-estado-3,.maz-estado-4,.maz-pila,.maz-fuente,.maz-trono-sprite,.maz-nivel-actual{animation:none}
+.maz-parpadeo,.maz-halo-brillo,.maz-vaiven,.maz-mota,.maz-estado-0,.maz-estado-1,.maz-estado-3,.maz-estado-4,.maz-fuente,.maz-trono-sprite,.maz-nivel-actual{animation:none}
 .maz-parpadeo,.maz-halo-brillo,.maz-estado-0,.maz-estado-3,.maz-estado-4,.maz-fuente{opacity:.9}
 .maz-mota{opacity:.75;transform:none}
 }
