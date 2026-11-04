@@ -9,7 +9,7 @@
   }
 
   window.PORTAFOLIO_CONFIG = congelar({
-    VERSION: "21",
+    VERSION: "22",
     CLAVE_MAZMORRA: "portafolio.v1.mazmorra",
     VALOR_ON: "1",
     VALOR_OFF: "0",
@@ -38,7 +38,6 @@
     TRONO_TIRA: 128,
     TRONO_MS: 600,
     CANDADO_PX: 32,
-    PILA_PX: 32,
     CLAVE_META: "meta.v1.",
     META: {
       V: 1,
@@ -55,20 +54,12 @@
     },
     FASES: ["Planeación", "Definición", "Diseño", "Construcción", "Validación", "Lanzamiento", "Descartada"],
     ESTADOS: ["Pendiente", "En curso", "En pausa", "En revisión", "Completada"],
-    PILAS: {
-      "1": "pila-idea.png",
-      "2": "pila-definicion.png",
-      "3": "pila-definicion.png",
-      "23": "pila-definicion.png",
-      "4": "pila-construccion.png",
-      "5": "pila-validacion.png"
-    },
     NIVELES: [
-      { id: "ceniza", nombre: "Ceniza", min: 0, cupo: 2, fondo: "#070304", fuego: "#ff5a3a" },
-      { id: "brasa", nombre: "Brasa", min: 2, cupo: 3, fondo: "#120403", fuego: "#ff8a3a" },
-      { id: "llama", nombre: "Llama", min: 4, cupo: 4, fondo: "#1a0a06", fuego: "#ffb53a" },
-      { id: "forja", nombre: "Forja", min: 7, cupo: 6, fondo: "#140c08", fuego: "#ffcf70" },
-      { id: "faro", nombre: "Faro", min: 10, cupo: 8, fondo: "#1a1003", fuego: "#ffe08a" }
+      { id: "ceniza", nombre: "Ceniza", min: 0, fondo: "#070304", fuego: "#ff5a3a" },
+      { id: "brasa", nombre: "Brasa", min: 2, fondo: "#120403", fuego: "#ff8a3a" },
+      { id: "llama", nombre: "Llama", min: 4, fondo: "#1a0a06", fuego: "#ffb53a" },
+      { id: "forja", nombre: "Forja", min: 7, fondo: "#140c08", fuego: "#ffcf70" },
+      { id: "faro", nombre: "Faro", min: 10, fondo: "#1a1003", fuego: "#ffe08a" }
     ],
     DEFECTO: {
       objetos: ["cofre", "altar", "estatua"],
@@ -156,7 +147,6 @@
       NIVELES: "Niveles",
       ACTUAL: "Actual",
       LANZAMIENTOS: "lanzamientos",
-      POR_SALA: "por sala",
       FALTA_UNO: "Falta 1 lanzamiento",
       FALTAN: "Faltan {n} lanzamientos"
     }
