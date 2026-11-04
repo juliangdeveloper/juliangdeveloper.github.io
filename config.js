@@ -9,7 +9,7 @@
   }
 
   window.PORTAFOLIO_CONFIG = congelar({
-    VERSION: "13",
+    VERSION: "15",
     CLAVE_MAZMORRA: "portafolio.v1.mazmorra",
     VALOR_ON: "1",
     VALOR_OFF: "0",
@@ -26,6 +26,9 @@
     VISTA_PILA: "-28 -28 56 56",
     BESTIA_PASO: 0.45,
     ANTORCHA_PASO: 0.37,
+    NIVEL_MAX: 10,
+    APORTE_MAX: 99,
+    CLAVE_META: "meta.v1.",
     NIVELES: [
       { id: "ceniza", nombre: "Ceniza", min: 0, cupo: 2, fondo: "#070304", fuego: "#ff5a3a" },
       { id: "brasa", nombre: "Brasa", min: 2, cupo: 3, fondo: "#120403", fuego: "#ff8a3a" },
@@ -95,6 +98,11 @@
       DT_MAX: 64,
       DT_INICIAL: 16
     },
+    STATS: [
+      { id: "musical", nombre: "Habilidad musical", nivel: 2 },
+      { id: "perseverancia", nombre: "Perseverancia", nivel: 3 },
+      { id: "disciplina", nombre: "Disciplina", nivel: 5 }
+    ],
     TEXTOS: {
       AJUSTES: "Ajustes",
       MAZMORRA: "Mazmorra",
@@ -103,7 +111,16 @@
       VERSION: "Versión",
       PILA: "Pila",
       VACIO: "Aquí aparecerán los proyectos.",
-      PROYECTOS: "proyectos"
+      PROYECTOS: "proyectos",
+      TRONO: "Trono",
+      BLOQUEADA: "Bloqueada",
+      SIN_APORTE: "Nadie la alimenta todavía.",
+      NIVELES: "Niveles",
+      ACTUAL: "Actual",
+      LANZAMIENTOS: "lanzamientos",
+      POR_SALA: "por sala",
+      FALTA_UNO: "Falta 1 lanzamiento",
+      FALTAN: "Faltan {n} lanzamientos"
     }
   });
 })();
