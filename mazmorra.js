@@ -16,7 +16,7 @@
   var HUECO = 16;
   var MURO = 8;
   var MARGEN = 12;
-  var CAB = 22;
+  var CAB = 30;
   var BANDA_BESTIAS = 34;
   var OBJ = 64;
   var PLACA_W = 76;
@@ -382,10 +382,11 @@
     return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
   }
 
-  function placaW() { return Math.round(PLACA_W * itemZoom); }
-  function placaH() { return Math.round(PLACA_H * itemZoom); }
-  function objH() { return Math.round(OBJ * itemZoom); }
-  function celdaW() { return Math.round(CELDA_W * itemZoom); }
+  function spriteMul() { return itemZoom >= 2 ? 2 : 1; }
+  function placaW() { return spriteMul() >= 2 ? 80 : 68; }
+  function placaH() { return spriteMul() >= 2 ? 32 : 30; }
+  function objH() { return 32 * spriteMul(); }
+  function celdaW() { return Math.max(placaW() + 4, 40 * spriteMul() + 24); }
   function itemAlto() { return objH() + 4 + placaH(); }
 
   function huella(cx, by) {
@@ -406,7 +407,7 @@
     var t = String(texto || "");
     try {
       if (!lienzoTitulo) lienzoTitulo = document.createElement("canvas").getContext("2d");
-      lienzoTitulo.font = "700 11px " + getComputedStyle(document.body).fontFamily;
+      lienzoTitulo.font = "700 12px " + getComputedStyle(document.body).fontFamily;
       return Math.ceil(lienzoTitulo.measureText(t).width);
     } catch (e) {
       return t.length * 7;
@@ -427,22 +428,31 @@
     if (w < titulo) w = titulo;
     var tope = pistaAncho();
     if (w > tope) w = tope;
-    return snap(w, 16);
+    return snap(w, 8);
   }
 
-  function aplicarMedida(sala, w) {
+  function filasDe(sala, w) {
     var k = sala.slots;
     if (k < 1) k = 1;
     var cw = celdaW();
-    var ch = Math.max(CELDA_H, Math.round(CELDA_H * itemZoom));
     var porFila = Math.max(1, Math.floor((w - 2 * (MURO + MARGEN)) / cw));
-    var filas = Math.ceil(k / porFila);
-    var alto = CAB + 2 * MURO + 2 * MARGEN + filas * ch + BANDA_BESTIAS + (fnv(sala.fase + "h") % 2) * 16;
-    sala.w = w;
-    sala.h = snap(alto, 16);
-    sala.porFila = porFila;
-    sala.filas = filas;
+    return { porFila: porFila, filas: Math.ceil(k / porFila) };
+  }
+
+  function altoMinSala(sala, w) {
+    var f = filasDe(sala, w);
+    var ch = Math.max(itemAlto() + 8, Math.round(CELDA_H * (spriteMul() >= 2 ? 1.25 : 0.7)));
+    return CAB + 2 * MURO + 2 * MARGEN + f.filas * ch + BANDA_BESTIAS;
+  }
+
+  function aplicarMedida(sala, w, hForzado) {
+    var f = filasDe(sala, w);
+    sala.w = Math.floor(w);
+    sala.porFila = f.porFila;
+    sala.filas = f.filas;
     sala.muescas = [];
+    if (hForzado && hForzado > 0) sala.h = Math.floor(hForzado);
+    else sala.h = snap(altoMinSala(sala, w), 2);
   }
 
   function medir(sala) {
@@ -455,98 +465,75 @@
     return n;
   }
 
-  function ubicar(salas) {
-    var pista = pistaAncho();
-    var y = 0;
-    var banda = [];
+  function bandasDe(salas) {
     var bandas = [];
     var i;
-    for (i = 0; i < salas.length; i++) {
-      medir(salas[i]);
-      if (banda.length >= 2 || (banda.length && sumaAnchos(banda) + HUECO * banda.length + salas[i].w > pista)) {
-        bandas.push(banda);
-        banda = [];
-      }
-      banda.push(salas[i]);
+    for (i = 0; i < salas.length; i++) medir(salas[i]);
+    for (i = 0; i < salas.length; i += 2) {
+      bandas.push(salas.slice(i, i + 2));
     }
-    if (banda.length) bandas.push(banda);
+    return bandas;
+  }
+
+  function ubicar(salas, altoLibre) {
+    var pista = pistaAncho();
+    var bandas = bandasDe(salas);
+    var i, j;
     for (i = 0; i < bandas.length; i++) {
       var grupo = bandas[i];
       var huecos = HUECO * (grupo.length - 1);
-      var base = sumaAnchos(grupo);
-      var extra = pista - base - huecos;
-      if (extra < 0) extra = 0;
-      var reparto = grupo.length ? Math.floor(extra / grupo.length) : 0;
-      var resto = extra - reparto * grupo.length;
-      for (var j = 0; j < grupo.length; j++) {
-        var plus = reparto + (j < resto ? 1 : 0);
-        aplicarMedida(grupo[j], snap(grupo[j].w + plus, 16));
-      }
-      var usado = sumaAnchos(grupo) + huecos;
-      var sobra = pista - usado;
-      var x = MUNDO_PAD + (sobra > 0 ? Math.floor(sobra / 2) : 0);
-      var altoB = 0;
-      for (j = 0; j < grupo.length; j++) {
-        var s = grupo[j];
-        s.x = x;
-        s.y = y;
-        x += s.w + HUECO;
-        if (s.h > altoB) altoB = s.h;
-      }
-      for (j = 0; j < grupo.length; j++) grupo[j].h = altoB;
-      y += altoB + 8;
+      var base = Math.floor((pista - huecos) / grupo.length);
+      if (base < 96) base = Math.floor((pista - huecos) / Math.max(grupo.length, 1));
+      var sobra = pista - huecos - base * grupo.length;
+      if (sobra < 0) sobra = 0;
+      for (j = 0; j < grupo.length; j++) aplicarMedida(grupo[j], base + (j < sobra ? 1 : 0));
     }
+    var nBandas = bandas.length;
+    var gap = 8;
+    var altoDisp = altoLibre > 32 ? altoLibre : 0;
+    var altoBanda = 0;
+    if (altoDisp > 0 && nBandas > 0) {
+      altoBanda = Math.floor((altoDisp - gap * (nBandas - 1)) / nBandas);
+      if (altoBanda < 64) altoBanda = 64;
+    }
+    var resto = 0;
+    if (altoDisp > 0 && nBandas > 0) {
+      resto = altoDisp - (altoBanda * nBandas + gap * (nBandas - 1));
+      if (resto < 0) resto = 0;
+    }
+    var y = 0;
+    for (i = 0; i < bandas.length; i++) {
+      var grupo2 = bandas[i];
+      var minH = 0;
+      for (j = 0; j < grupo2.length; j++) {
+        var mh = altoMinSala(grupo2[j], grupo2[j].w);
+        if (mh > minH) minH = mh;
+      }
+      var hB = altoDisp > 0 ? altoBanda + (i < resto ? 1 : 0) : minH;
+      var x = MUNDO_PAD;
+      for (j = 0; j < grupo2.length; j++) {
+        aplicarMedida(grupo2[j], grupo2[j].w, hB);
+        grupo2[j].x = x;
+        grupo2[j].y = y;
+        x += grupo2[j].w + HUECO;
+      }
+      y += hB + (i < nBandas - 1 ? gap : 0);
+    }
+    if (altoDisp > 0) return altoDisp;
     return y;
   }
 
-  function estirarVertical(salas, altoActual, altoObjetivo) {
-    var extra = Math.floor(altoObjetivo - altoActual);
-    if (!(extra >= 16) || !salas.length) return altoActual;
-    var ys = [];
-    var i, j;
-    for (i = 0; i < salas.length; i++) {
-      if (ys.indexOf(salas[i].y) < 0) ys.push(salas[i].y);
-    }
-    ys.sort(function (a, b) { return a - b; });
-    var n = ys.length;
-    var base = Math.floor(extra / n);
-    var resto = extra - base * n;
-    var deltas = [];
-    var sum = 0;
-    for (i = 0; i < n; i++) {
-      var d = snap(base + (i < resto ? 1 : 0), 8);
-      if (d < 8) d = 8;
-      deltas[i] = d;
-      sum += d;
-    }
-    if (sum > extra + 8) {
-      deltas[n - 1] = Math.max(8, deltas[n - 1] - (sum - extra));
-    }
-    var prefix = 0;
-    for (i = 0; i < n; i++) {
-      for (j = 0; j < salas.length; j++) {
-        if (salas[j].y === ys[i]) {
-          salas[j].y = ys[i] + prefix;
-          salas[j].h = snap(salas[j].h + deltas[i], 8);
-        }
-      }
-      prefix += deltas[i];
-    }
-    var by = [];
-    for (i = 0; i < salas.length; i++) {
-      if (by.indexOf(salas[i].y) < 0) by.push(salas[i].y);
-    }
-    for (i = 0; i < by.length; i++) {
-      var mh = 0;
-      for (j = 0; j < salas.length; j++) if (salas[j].y === by[i] && salas[j].h > mh) mh = salas[j].h;
-      for (j = 0; j < salas.length; j++) if (salas[j].y === by[i]) salas[j].h = mh;
-    }
-    var maxB = 0;
-    for (i = 0; i < salas.length; i++) {
-      var b = salas[i].y + salas[i].h;
-      if (b > maxB) maxB = b;
-    }
-    return maxB + 8;
+  function elegirItemZoom(nSalas, altoLibre) {
+    var pista = pistaAncho();
+    var bandas = Math.max(1, Math.ceil(Math.max(nSalas, 1) / 2));
+    var gap = 8;
+    var hB = Math.floor((Math.max(altoLibre, 120) - gap * (bandas - 1)) / bandas);
+    var cols = Math.min(2, Math.max(1, nSalas));
+    var wB = Math.floor((pista - HUECO * (cols - 1)) / cols);
+    var innerH = hB - CAB - 2 * MURO - 2 * MARGEN - BANDA_BESTIAS;
+    var innerW = wB - 2 * (MURO + MARGEN);
+    if (innerH >= 160 && innerW >= 96) return 2;
+    return 1;
   }
 
   function pasillos(salas) {
@@ -826,7 +813,7 @@
     return 0;
   }
 
-  function preparar(salas, nivel, altoObjetivo) {
+  function preparar(salas, nivel, altoLibre) {
     var copias = [];
     for (var i = 0; i < salas.length; i++) {
       copias.push({
@@ -836,10 +823,7 @@
         slots: slotsVisibles(salas[i])
       });
     }
-    var alto = ubicar(copias);
-    if (altoObjetivo && altoObjetivo > alto + 15) {
-      alto = estirarVertical(copias, alto, altoObjetivo);
-    }
+    var alto = ubicar(copias, altoLibre);
     var corr = pasillos(copias);
     for (i = 0; i < copias.length; i++) copias[i].pts = colocarSlots(copias[i], nivel.id);
     return { salas: copias, alto: alto, corr: corr };
@@ -1050,7 +1034,7 @@
     var s = document.createElement("span");
     s.className = "maz-px";
     s.setAttribute("aria-hidden", "true");
-    var sc = (escala || 1) * (itemZoom > 0 ? itemZoom : 1);
+    var sc = escala == null ? spriteMul() : escala;
     s.style.width = (f.w * sc) + "px";
     s.style.height = (f.h * sc) + "px";
     s.style.backgroundImage = atlasCss;
@@ -1133,6 +1117,8 @@
     el.className = clase;
     el.style.left = (cx - sala.x - placaW() / 2) + "px";
     el.style.top = (by - sala.y - objH()) + "px";
+    el.style.width = placaW() + "px";
+    el.style.height = itemAlto() + "px";
     el.style.zIndex = String(10000 + by);
     return el;
   }
@@ -1140,7 +1126,7 @@
   function ponerEstado(el, app, left, top) {
     var nombre = estadoSprite(app.estado);
     if (!nombre) return;
-    var sp = spriteEl(nombre, 2);
+    var sp = spriteEl(nombre, spriteMul());
     if (!sp) return;
     sp.style.position = "absolute";
     sp.style.left = left + "px";
@@ -1184,26 +1170,28 @@
     el.className = "maz-obj " + claseEstado(app);
     el.style.left = (cx - sala.x - placaW() / 2) + "px";
     el.style.top = (by - sala.y - objH()) + "px";
+    el.style.width = placaW() + "px";
+    el.style.height = itemAlto() + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
     var asp = aspecto(app);
-    var sp = spriteEl(asp.objeto, 2);
+    var sp = spriteEl(asp.objeto, spriteMul());
     if (sp) {
-      var peana = spriteEl("peana/" + (sala.fase === "2" || sala.fase === "3" ? "23" : sala.fase), 2);
+      var peana = spriteEl("peana/" + (sala.fase === "2" || sala.fase === "3" ? "23" : sala.fase), spriteMul());
       if (peana) {
         peana.style.position = "absolute";
-        peana.style.left = Math.round(6 * itemZoom) + "px";
-        peana.style.top = Math.round(48 * itemZoom) + "px";
+        peana.style.left = Math.round(3 * spriteMul()) + "px";
+        peana.style.top = Math.round(24 * spriteMul()) + "px";
         peana.style.zIndex = "0";
         el.appendChild(peana);
       }
       sp.style.position = "absolute";
-      sp.style.left = Math.round(6 * itemZoom) + "px";
+      sp.style.left = Math.round(3 * spriteMul()) + "px";
       sp.style.top = "0";
       sp.style.zIndex = "1";
       el.appendChild(sp);
-      if (!app.bloqueada) ponerEstado(el, app, Math.round(54 * itemZoom), 0);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(27 * spriteMul()), 0);
     } else {
       var tema = temaDe(sala.fase === "23" ? "2" : sala.fase);
       var tipos = tema.objetos || ["cofre"];
@@ -1220,16 +1208,18 @@
     el.className = "maz-obj " + claseEstado(app);
     el.style.left = (cx - sala.x - placaW() / 2) + "px";
     el.style.top = (by - sala.y - objH()) + "px";
+    el.style.width = placaW() + "px";
+    el.style.height = itemAlto() + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
-    var sp = spriteEl(fragmentoDe(app.completadas), 2);
+    var sp = spriteEl(fragmentoDe(app.completadas), spriteMul());
     if (sp) {
       sp.style.position = "absolute";
-      sp.style.left = Math.round(22 * itemZoom) + "px";
+      sp.style.left = Math.round(11 * spriteMul()) + "px";
       sp.style.top = "0";
       el.appendChild(sp);
-      if (!app.bloqueada) ponerEstado(el, app, Math.round(38 * itemZoom), 0);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(19 * spriteMul()), 0);
     } else respaldo(el, "cristal", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
@@ -1242,25 +1232,27 @@
     el.className = "maz-obj " + claseEstado(app);
     el.style.left = (cx - sala.x - placaW() / 2) + "px";
     el.style.top = (by - sala.y - objH()) + "px";
+    el.style.width = placaW() + "px";
+    el.style.height = itemAlto() + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
     var asp = aspecto(app);
-    var sp = spriteEl("desc/caja/" + (fnv(semillaDe(app)) % 2), 2);
+    var sp = spriteEl("desc/caja/" + (fnv(semillaDe(app)) % 2), spriteMul());
     if (sp) {
       sp.style.position = "absolute";
-      sp.style.left = Math.round(14 * itemZoom) + "px";
-      sp.style.top = Math.round(16 * itemZoom) + "px";
+      sp.style.left = Math.round(7 * spriteMul()) + "px";
+      sp.style.top = Math.round(8 * spriteMul()) + "px";
       el.appendChild(sp);
-      var ic = spriteEl(asp.icono, 2);
+      var ic = spriteEl(asp.icono, spriteMul());
       if (ic) {
         ic.style.position = "absolute";
-        ic.style.left = Math.round(30 * itemZoom) + "px";
-        ic.style.top = Math.round(36 * itemZoom) + "px";
+        ic.style.left = Math.round(15 * spriteMul()) + "px";
+        ic.style.top = Math.round(18 * spriteMul()) + "px";
         ic.style.zIndex = "2";
         el.appendChild(ic);
       }
-      if (!app.bloqueada) ponerEstado(el, app, Math.round(46 * itemZoom), Math.round(16 * itemZoom));
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(23 * spriteMul()), Math.round(8 * spriteMul()));
     } else respaldo(el, "caja", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
@@ -1471,7 +1463,8 @@
   }
 
   function fijarAnchoMundo(px) {
-    var n = snap(Math.max(296, Math.floor(px)), 16);
+    var n = Math.max(296, Math.floor(px));
+    if (n % 2) n -= 1;
     anchoMundo = n;
     return n;
   }
@@ -1502,49 +1495,15 @@
     var anchoVista = Math.max(296, Math.floor(ancho || 0));
     var i;
     var plan;
-    var e;
-    itemZoom = 1;
     fijarAnchoMundo(anchoVista);
-    plan = preparar(salas, nivel);
-    if (altoLibre > 8 && plan.alto > altoLibre) {
-      var tope = anchoVista * 3;
-      var objetivo = anchoVista * plan.alto / altoLibre;
-      if (objetivo > tope) objetivo = tope;
-      if (objetivo < anchoVista) objetivo = anchoVista;
-      fijarAnchoMundo(objetivo);
-      plan = preparar(salas, nivel);
-      if (plan.alto > altoLibre) {
-        objetivo = anchoVista * plan.alto / altoLibre;
-        if (objetivo > tope) objetivo = tope;
-        if (objetivo > anchoMundo) {
-          fijarAnchoMundo(objetivo);
-          plan = preparar(salas, nivel);
-        }
-      }
-      e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
-      if (e > 0 && plan.alto * e + 24 < altoLibre) {
-        var altoMeta = Math.floor(altoLibre / e);
-        itemZoom = Math.min(2.15, Math.max(1.35, (altoMeta / Math.max(plan.alto, 1)) * 1.05));
-        plan = preparar(salas, nivel, altoMeta);
-        e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
-      }
-    } else if (altoLibre > 8 && plan.alto + 16 < altoLibre) {
-      var ratio = altoLibre / Math.max(plan.alto, 1);
-      itemZoom = Math.min(2.15, Math.max(1.35, ratio * 1.0));
-      plan = preparar(salas, nivel, altoLibre);
-      if (plan.alto + 20 < altoLibre) plan = preparar(salas, nivel, altoLibre);
-      e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
-      if (e > 0.98) e = 1;
-    } else {
-      e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
-    }
+    itemZoom = elegirItemZoom(salas.length, altoLibre > 8 ? altoLibre : 240);
+    plan = preparar(salas, nivel, altoLibre > 8 ? altoLibre : 0);
     salasEl.style.width = anchoMundo + "px";
     salasEl.style.height = plan.alto + "px";
-    salasEl.style.transform = "scale(" + e + ")";
-    salasEl.style.transformOrigin = "top left";
-    escalaEl.style.width = Math.floor(anchoMundo * e) + "px";
-    escalaEl.style.height = Math.floor(plan.alto * e) + "px";
-    document.documentElement.style.setProperty("--maz-escala", String(e));
+    salasEl.style.transform = "none";
+    escalaEl.style.width = anchoMundo + "px";
+    escalaEl.style.height = plan.alto + "px";
+    document.documentElement.style.setProperty("--maz-escala", "1");
     document.documentElement.style.setProperty("--maz-item", String(itemZoom));
     for (i = 0; i < plan.corr.segmentos.length; i++) {
       var pas = pasilloEl(plan.corr.segmentos[i], nivel);
