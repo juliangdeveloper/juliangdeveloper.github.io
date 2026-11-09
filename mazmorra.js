@@ -1524,13 +1524,13 @@
       e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
       if (e > 0 && plan.alto * e + 24 < altoLibre) {
         var altoMeta = Math.floor(altoLibre / e);
-        itemZoom = Math.min(1.7, Math.max(1.2, (altoMeta / Math.max(plan.alto, 1)) * 0.9));
+        itemZoom = Math.min(2.15, Math.max(1.35, (altoMeta / Math.max(plan.alto, 1)) * 1.05));
         plan = preparar(salas, nivel, altoMeta);
         e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
       }
     } else if (altoLibre > 8 && plan.alto + 16 < altoLibre) {
       var ratio = altoLibre / Math.max(plan.alto, 1);
-      itemZoom = Math.min(1.85, Math.max(1.2, ratio * 0.9));
+      itemZoom = Math.min(2.15, Math.max(1.35, ratio * 1.0));
       plan = preparar(salas, nivel, altoLibre);
       if (plan.alto + 20 < altoLibre) plan = preparar(salas, nivel, altoLibre);
       e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
