@@ -199,9 +199,9 @@ html.mazmorra footer p{margin:0}
 .maz-vacio{margin:24px 16px;text-align:center;color:#f3e6dc}
 .maz-sala{position:absolute;overflow:hidden}
 .maz-sala canvas,.maz-pasillo{position:absolute;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}
-.maz-sala h3{position:absolute;z-index:50;left:12px;top:5px;right:44px;margin:0;font-size:calc(12px / max(var(--maz-escala,1),0.5));font-weight:700;line-height:1.2;color:#f0e0cc;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.maz-sala h3{position:absolute;z-index:50;left:12px;top:5px;right:44px;margin:0;font-size:calc(14px * var(--maz-item,1) / max(var(--maz-escala,1),0.38));font-weight:700;line-height:1.2;color:#f0e0cc;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .maz-px{display:block;background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;flex:none}
-.maz-obj,.maz-bin,.maz-fuente{position:absolute;width:76px;height:94px;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-decoration:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.maz-obj,.maz-bin,.maz-fuente{position:absolute;width:calc(76px * var(--maz-item,1));height:calc(94px * var(--maz-item,1));margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-decoration:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .maz-bin{width:48px;height:48px}
 .maz-fuente{width:72px;height:80px;overflow:hidden}
 .maz-obj:focus-visible,.maz-bin:focus-visible,.maz-fuente:focus-visible,.maz-trono:focus-visible,.maz-stat:focus-visible{outline:2px solid var(--maz-fuego,#ffb53a);outline-offset:1px}
@@ -260,10 +260,10 @@ html.mazmorra footer p{margin:0}
 .maz-nivel-falta{margin-left:auto;color:var(--maz-fuego,#ffb53a);font-size:.82rem;font-weight:700}
 .maz-nivel-cerrado{opacity:.4}
 .maz-nivel-actual{animation:maz-pulso-suave 2.8s ease-in-out infinite}
-.maz-sprite{position:absolute;left:6px;top:0;width:64px;height:64px;pointer-events:none}
+.maz-sprite{position:absolute;left:calc(6px * var(--maz-item,1));top:0;width:calc(64px * var(--maz-item,1));height:calc(64px * var(--maz-item,1));pointer-events:none}
 .maz-sprite svg{width:100%;height:100%;display:block}
-.maz-rotulo{position:absolute;left:0;top:68px;width:76px;height:26px;background-color:rgba(28,18,14,.9);background-repeat:no-repeat;background-size:100% 100%;z-index:2;pointer-events:none}
-.maz-rotulo > span{position:absolute;left:4px;right:4px;top:3px;height:20px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;word-break:break-word;overflow-wrap:anywhere;text-align:center;font-size:calc(9px / max(var(--maz-escala,1),0.55));line-height:1.1;color:#f6efe4;text-shadow:0 1px 0 #140e0c}
+.maz-rotulo{position:absolute;left:0;top:68px;width:76px;height:26px;background-color:rgba(28,18,14,.9);background-repeat:no-repeat;background-size:100% 100%;z-index:2;pointer-events:none;box-sizing:border-box}
+.maz-rotulo > span{position:absolute;left:3px;right:3px;top:2px;bottom:2px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;word-break:break-word;overflow-wrap:anywhere;text-align:center;font-size:calc(12px * var(--maz-item,1) / max(var(--maz-escala,1),0.38));line-height:1.15;color:#f6efe4;text-shadow:0 1px 0 #140e0c}
 .maz-rotulo-simple{box-shadow:inset 0 0 0 2px #6b5344}
 .maz-etiqueta{position:absolute;display:grid;place-items:center;background-color:#e6c98a;background-repeat:no-repeat;background-size:100% 100%;color:#2a160c;font-size:9px;font-weight:700;line-height:1;pointer-events:none}
 .maz-bestia{position:absolute;width:28px;height:28px;z-index:4;pointer-events:none}

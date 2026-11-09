@@ -25,6 +25,7 @@
   var TITULO_HOLGURA = 60;
   var lienzoTitulo = null;
   var CELDA_H = 112;
+  var itemZoom = 1;
   var fases = null;
   var raiz = null;
   var placa = null;
@@ -381,8 +382,15 @@
     return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
   }
 
+  function placaW() { return Math.round(PLACA_W * itemZoom); }
+  function placaH() { return Math.round(PLACA_H * itemZoom); }
+  function objH() { return Math.round(OBJ * itemZoom); }
+  function celdaW() { return Math.round(CELDA_W * itemZoom); }
+  function itemAlto() { return objH() + 4 + placaH(); }
+
   function huella(cx, by) {
-    return { x: cx - PLACA_W / 2, y: by - OBJ, w: PLACA_W, h: OBJ + 4 + PLACA_H };
+    var pw = placaW();
+    return { x: cx - pw / 2, y: by - objH(), w: pw, h: itemAlto() };
   }
 
   function muescaRect(s, e, m) {
@@ -425,9 +433,11 @@
   function aplicarMedida(sala, w) {
     var k = sala.slots;
     if (k < 1) k = 1;
-    var porFila = Math.max(1, Math.floor((w - 2 * (MURO + MARGEN)) / CELDA_W));
+    var cw = celdaW();
+    var ch = Math.max(CELDA_H, Math.round(CELDA_H * itemZoom));
+    var porFila = Math.max(1, Math.floor((w - 2 * (MURO + MARGEN)) / cw));
     var filas = Math.ceil(k / porFila);
-    var alto = CAB + 2 * MURO + 2 * MARGEN + filas * CELDA_H + BANDA_BESTIAS + (fnv(sala.fase + "h") % 2) * 16;
+    var alto = CAB + 2 * MURO + 2 * MARGEN + filas * ch + BANDA_BESTIAS + (fnv(sala.fase + "h") % 2) * 16;
     sala.w = w;
     sala.h = snap(alto, 16);
     sala.porFila = porFila;
@@ -481,12 +491,62 @@
         s.x = x;
         s.y = y;
         x += s.w + HUECO;
-        var bajo = s.y + s.h - y;
-        if (bajo > altoB) altoB = bajo;
+        if (s.h > altoB) altoB = s.h;
       }
+      for (j = 0; j < grupo.length; j++) grupo[j].h = altoB;
       y += altoB + 8;
     }
     return y;
+  }
+
+  function estirarVertical(salas, altoActual, altoObjetivo) {
+    var extra = Math.floor(altoObjetivo - altoActual);
+    if (!(extra >= 16) || !salas.length) return altoActual;
+    var ys = [];
+    var i, j;
+    for (i = 0; i < salas.length; i++) {
+      if (ys.indexOf(salas[i].y) < 0) ys.push(salas[i].y);
+    }
+    ys.sort(function (a, b) { return a - b; });
+    var n = ys.length;
+    var base = Math.floor(extra / n);
+    var resto = extra - base * n;
+    var deltas = [];
+    var sum = 0;
+    for (i = 0; i < n; i++) {
+      var d = snap(base + (i < resto ? 1 : 0), 8);
+      if (d < 8) d = 8;
+      deltas[i] = d;
+      sum += d;
+    }
+    if (sum > extra + 8) {
+      deltas[n - 1] = Math.max(8, deltas[n - 1] - (sum - extra));
+    }
+    var prefix = 0;
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < salas.length; j++) {
+        if (salas[j].y === ys[i]) {
+          salas[j].y = ys[i] + prefix;
+          salas[j].h = snap(salas[j].h + deltas[i], 8);
+        }
+      }
+      prefix += deltas[i];
+    }
+    var by = [];
+    for (i = 0; i < salas.length; i++) {
+      if (by.indexOf(salas[i].y) < 0) by.push(salas[i].y);
+    }
+    for (i = 0; i < by.length; i++) {
+      var mh = 0;
+      for (j = 0; j < salas.length; j++) if (salas[j].y === by[i] && salas[j].h > mh) mh = salas[j].h;
+      for (j = 0; j < salas.length; j++) if (salas[j].y === by[i]) salas[j].h = mh;
+    }
+    var maxB = 0;
+    for (i = 0; i < salas.length; i++) {
+      var b = salas[i].y + salas[i].h;
+      if (b > maxB) maxB = b;
+    }
+    return maxB + 8;
   }
 
   function pasillos(salas) {
@@ -536,15 +596,20 @@
     var k = sala.slots;
     var altoFila = (y1 - y0) / sala.filas;
     var out = [];
+    var cw = celdaW();
+    var pw = placaW();
+    var oh = objH();
+    var ih = itemAlto();
     var r, c, n, libre, off, cx, holg, by;
     for (r = 0; r < sala.filas; r++) {
       n = Math.min(sala.porFila, k - r * sala.porFila);
-      libre = (x1 - x0) - n * CELDA_W;
+      libre = (x1 - x0) - n * cw;
       off = libre * rnd();
       for (c = 0; c < n; c++) {
-        cx = x0 + off + (c + 0.5) * CELDA_W + (rnd() - 0.5) * (CELDA_W - PLACA_W);
-        holg = altoFila - (OBJ + 4 + PLACA_H);
-        by = y0 + r * altoFila + OBJ + rnd() * holg;
+        cx = x0 + off + (c + 0.5) * cw + (rnd() - 0.5) * Math.max(0, cw - pw);
+        holg = altoFila - ih;
+        if (holg < 0) holg = 0;
+        by = y0 + r * altoFila + oh + rnd() * holg;
         out.push([Math.round(cx), Math.round(by)]);
       }
     }
@@ -761,7 +826,7 @@
     return 0;
   }
 
-  function preparar(salas, nivel) {
+  function preparar(salas, nivel, altoObjetivo) {
     var copias = [];
     for (var i = 0; i < salas.length; i++) {
       copias.push({
@@ -772,6 +837,9 @@
       });
     }
     var alto = ubicar(copias);
+    if (altoObjetivo && altoObjetivo > alto + 15) {
+      alto = estirarVertical(copias, alto, altoObjetivo);
+    }
     var corr = pasillos(copias);
     for (i = 0; i < copias.length; i++) copias[i].pts = colocarSlots(copias[i], nivel.id);
     return { salas: copias, alto: alto, corr: corr };
@@ -982,7 +1050,7 @@
     var s = document.createElement("span");
     s.className = "maz-px";
     s.setAttribute("aria-hidden", "true");
-    var sc = escala || 1;
+    var sc = (escala || 1) * (itemZoom > 0 ? itemZoom : 1);
     s.style.width = (f.w * sc) + "px";
     s.style.height = (f.h * sc) + "px";
     s.style.backgroundImage = atlasCss;
@@ -1031,7 +1099,12 @@
     var el = document.createElement("span");
     el.className = "maz-rotulo";
     el.setAttribute("aria-hidden", "true");
-    var url = fondoNueve("placa/" + nivel + "-9s", PLACA_W, PLACA_H);
+    var pw = placaW();
+    var ph = placaH();
+    el.style.width = pw + "px";
+    el.style.height = ph + "px";
+    el.style.top = objH() + "px";
+    var url = fondoNueve("placa/" + nivel + "-9s", pw, ph);
     if (url) el.style.backgroundImage = "url(" + url + ")";
     else el.classList.add("maz-rotulo-simple");
     var t = document.createElement("span");
@@ -1058,8 +1131,8 @@
   function baseEl(tag, clase, sala, cx, by) {
     var el = document.createElement(tag);
     el.className = clase;
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW() / 2) + "px";
+    el.style.top = (by - sala.y - objH()) + "px";
     el.style.zIndex = String(10000 + by);
     return el;
   }
@@ -1109,8 +1182,8 @@
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
     el.className = "maz-obj " + claseEstado(app);
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW() / 2) + "px";
+    el.style.top = (by - sala.y - objH()) + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
@@ -1120,17 +1193,17 @@
       var peana = spriteEl("peana/" + (sala.fase === "2" || sala.fase === "3" ? "23" : sala.fase), 2);
       if (peana) {
         peana.style.position = "absolute";
-        peana.style.left = "6px";
-        peana.style.top = "48px";
+        peana.style.left = Math.round(6 * itemZoom) + "px";
+        peana.style.top = Math.round(48 * itemZoom) + "px";
         peana.style.zIndex = "0";
         el.appendChild(peana);
       }
       sp.style.position = "absolute";
-      sp.style.left = "6px";
+      sp.style.left = Math.round(6 * itemZoom) + "px";
       sp.style.top = "0";
       sp.style.zIndex = "1";
       el.appendChild(sp);
-      if (!app.bloqueada) ponerEstado(el, app, 54, 0);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(54 * itemZoom), 0);
     } else {
       var tema = temaDe(sala.fase === "23" ? "2" : sala.fase);
       var tipos = tema.objetos || ["cofre"];
@@ -1145,18 +1218,18 @@
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
     el.className = "maz-obj " + claseEstado(app);
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW() / 2) + "px";
+    el.style.top = (by - sala.y - objH()) + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
     var sp = spriteEl(fragmentoDe(app.completadas), 2);
     if (sp) {
       sp.style.position = "absolute";
-      sp.style.left = "22px";
+      sp.style.left = Math.round(22 * itemZoom) + "px";
       sp.style.top = "0";
       el.appendChild(sp);
-      if (!app.bloqueada) ponerEstado(el, app, 38, 0);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(38 * itemZoom), 0);
     } else respaldo(el, "cristal", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
@@ -1167,8 +1240,8 @@
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
     el.className = "maz-obj " + claseEstado(app);
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW() / 2) + "px";
+    el.style.top = (by - sala.y - objH()) + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
@@ -1176,18 +1249,18 @@
     var sp = spriteEl("desc/caja/" + (fnv(semillaDe(app)) % 2), 2);
     if (sp) {
       sp.style.position = "absolute";
-      sp.style.left = "14px";
-      sp.style.top = "16px";
+      sp.style.left = Math.round(14 * itemZoom) + "px";
+      sp.style.top = Math.round(16 * itemZoom) + "px";
       el.appendChild(sp);
       var ic = spriteEl(asp.icono, 2);
       if (ic) {
         ic.style.position = "absolute";
-        ic.style.left = "30px";
-        ic.style.top = "36px";
+        ic.style.left = Math.round(30 * itemZoom) + "px";
+        ic.style.top = Math.round(36 * itemZoom) + "px";
         ic.style.zIndex = "2";
         el.appendChild(ic);
       }
-      if (!app.bloqueada) ponerEstado(el, app, 46, 16);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(46 * itemZoom), Math.round(16 * itemZoom));
     } else respaldo(el, "caja", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
     el.appendChild(rotulo(app.nombre, nivel.id));
@@ -1427,10 +1500,12 @@
     }
     var altoLibre = lienzoEl ? lienzoEl.clientHeight : 0;
     var anchoVista = Math.max(296, Math.floor(ancho || 0));
-    fijarAnchoMundo(anchoVista);
-    var plan = preparar(salas, nivel);
-    var e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
     var i;
+    var plan;
+    var e;
+    itemZoom = 1;
+    fijarAnchoMundo(anchoVista);
+    plan = preparar(salas, nivel);
     if (altoLibre > 8 && plan.alto > altoLibre) {
       var tope = anchoVista * 3;
       var objetivo = anchoVista * plan.alto / altoLibre;
@@ -1447,6 +1522,21 @@
         }
       }
       e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
+      if (e > 0 && plan.alto * e + 24 < altoLibre) {
+        var altoMeta = Math.floor(altoLibre / e);
+        itemZoom = Math.min(1.7, Math.max(1.2, (altoMeta / Math.max(plan.alto, 1)) * 0.9));
+        plan = preparar(salas, nivel, altoMeta);
+        e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
+      }
+    } else if (altoLibre > 8 && plan.alto + 16 < altoLibre) {
+      var ratio = altoLibre / Math.max(plan.alto, 1);
+      itemZoom = Math.min(1.85, Math.max(1.2, ratio * 0.9));
+      plan = preparar(salas, nivel, altoLibre);
+      if (plan.alto + 20 < altoLibre) plan = preparar(salas, nivel, altoLibre);
+      e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
+      if (e > 0.98) e = 1;
+    } else {
+      e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
     }
     salasEl.style.width = anchoMundo + "px";
     salasEl.style.height = plan.alto + "px";
@@ -1455,6 +1545,7 @@
     escalaEl.style.width = Math.floor(anchoMundo * e) + "px";
     escalaEl.style.height = Math.floor(plan.alto * e) + "px";
     document.documentElement.style.setProperty("--maz-escala", String(e));
+    document.documentElement.style.setProperty("--maz-item", String(itemZoom));
     for (i = 0; i < plan.corr.segmentos.length; i++) {
       var pas = pasilloEl(plan.corr.segmentos[i], nivel);
       if (pas) salasEl.appendChild(pas);
@@ -1479,6 +1570,7 @@
     html.style.removeProperty("--maz-marco");
     html.style.removeProperty("--maz-marco-corte");
     html.style.removeProperty("--maz-escala");
+    html.style.removeProperty("--maz-item");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta && temaOriginal) meta.setAttribute("content", temaOriginal);
   }
