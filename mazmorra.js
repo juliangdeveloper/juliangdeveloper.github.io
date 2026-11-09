@@ -11,7 +11,8 @@
   var S3 = "#5a504a";
   var K = "#171110";
   var HL = "#6e645c";
-  var ANCHO = 352;
+  var anchoMundo = 352;
+  var MUNDO_PAD = 8;
   var HUECO = 16;
   var MURO = 8;
   var MARGEN = 12;
@@ -404,13 +405,26 @@
     }
   }
 
-  function medir(sala) {
+  function pistaAncho() {
+    var n = anchoMundo - 2 * MUNDO_PAD;
+    return n > 128 ? n : 128;
+  }
+
+  function minAnchoSala(sala) {
     var k = sala.slots;
     if (k < 1) k = 1;
     var h = fnv(sala.fase);
-    var w = k <= 2 ? 128 + (h % 2) * 16 : k <= 4 ? 208 + (h % 2) * 16 : ANCHO;
+    var w = k <= 2 ? 144 + (h % 2) * 16 : k <= 4 ? 208 + (h % 2) * 16 : 288 + (h % 2) * 16;
     var titulo = anchoTitulo(sala.nombre) + TITULO_HOLGURA;
-    if (w < titulo) w = titulo <= 208 ? 208 + (h % 2) * 16 : ANCHO;
+    if (w < titulo) w = titulo;
+    var tope = pistaAncho();
+    if (w > tope) w = tope;
+    return snap(w, 16);
+  }
+
+  function aplicarMedida(sala, w) {
+    var k = sala.slots;
+    if (k < 1) k = 1;
     var porFila = Math.max(1, Math.floor((w - 2 * (MURO + MARGEN)) / CELDA_W));
     var filas = Math.ceil(k / porFila);
     var alto = CAB + 2 * MURO + 2 * MARGEN + filas * CELDA_H + BANDA_BESTIAS + (fnv(sala.fase + "h") % 2) * 16;
@@ -421,6 +435,10 @@
     sala.muescas = [];
   }
 
+  function medir(sala) {
+    aplicarMedida(sala, minAnchoSala(sala));
+  }
+
   function sumaAnchos(arr) {
     var n = 0;
     for (var i = 0; i < arr.length; i++) n += arr[i].w;
@@ -428,13 +446,14 @@
   }
 
   function ubicar(salas) {
+    var pista = pistaAncho();
     var y = 0;
     var banda = [];
     var bandas = [];
     var i;
     for (i = 0; i < salas.length; i++) {
       medir(salas[i]);
-      if (banda.length && sumaAnchos(banda) + HUECO * banda.length + salas[i].w > ANCHO) {
+      if (banda.length >= 2 || (banda.length && sumaAnchos(banda) + HUECO * banda.length + salas[i].w > pista)) {
         bandas.push(banda);
         banda = [];
       }
@@ -443,16 +462,23 @@
     if (banda.length) bandas.push(banda);
     for (i = 0; i < bandas.length; i++) {
       var grupo = bandas[i];
-      var libre = ANCHO - sumaAnchos(grupo) - HUECO * (grupo.length - 1);
-      var clave = "banda";
-      for (var j = 0; j < grupo.length; j++) clave += grupo[j].fase;
-      var x = libre > 0 ? snap(libre * (i % 2 ? 0.75 : 0.25) + (fnv(clave) % 17) - 8) : 0;
-      if (x < 0) x = 0;
-      if (x > libre) x = libre;
+      var huecos = HUECO * (grupo.length - 1);
+      var base = sumaAnchos(grupo);
+      var extra = pista - base - huecos;
+      if (extra < 0) extra = 0;
+      var reparto = grupo.length ? Math.floor(extra / grupo.length) : 0;
+      var resto = extra - reparto * grupo.length;
+      for (var j = 0; j < grupo.length; j++) {
+        var plus = reparto + (j < resto ? 1 : 0);
+        aplicarMedida(grupo[j], snap(grupo[j].w + plus, 16));
+      }
+      var usado = sumaAnchos(grupo) + huecos;
+      var sobra = pista - usado;
+      var x = MUNDO_PAD + (sobra > 0 ? Math.floor(sobra / 2) : 0);
       var altoB = 0;
       for (j = 0; j < grupo.length; j++) {
         var s = grupo[j];
-        s.x = 12 + x;
+        s.x = x;
         s.y = y;
         x += s.w + HUECO;
         var bajo = s.y + s.h - y;
@@ -1371,10 +1397,16 @@
     return sec;
   }
 
-  function escalaDe(ancho, altoLibre, altoMundo) {
-    var ew = ancho > 0 ? ancho / 375 : 1;
+  function fijarAnchoMundo(px) {
+    var n = snap(Math.max(296, Math.floor(px)), 16);
+    anchoMundo = n;
+    return n;
+  }
+
+  function escalaDe(ancho, altoLibre, altoMundo, mundo) {
+    var ew = ancho > 0 && mundo > 0 ? ancho / mundo : 1;
     var eh = altoMundo > 0 && altoLibre > 8 ? altoLibre / altoMundo : 1;
-    var e = Math.min(ew, eh);
+    var e = Math.min(1, ew, eh);
     if (!(e > 0)) e = 1;
     return e;
   }
@@ -1383,6 +1415,7 @@
     salasEl.replaceChildren();
     if (!salas.length) {
       escalaEl.style.height = "auto";
+      escalaEl.style.width = "100%";
       salasEl.style.transform = "none";
       salasEl.style.height = "auto";
       salasEl.style.width = "100%";
@@ -1392,15 +1425,37 @@
       salasEl.appendChild(vacio);
       return;
     }
-    var plan = preparar(salas, nivel);
     var altoLibre = lienzoEl ? lienzoEl.clientHeight : 0;
-    var e = escalaDe(ancho, altoLibre, plan.alto);
-    salasEl.style.width = "375px";
+    var anchoVista = Math.max(296, Math.floor(ancho || 0));
+    fijarAnchoMundo(anchoVista);
+    var plan = preparar(salas, nivel);
+    var e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
+    var i;
+    if (altoLibre > 8 && plan.alto > altoLibre) {
+      var tope = anchoVista * 3;
+      var objetivo = anchoVista * plan.alto / altoLibre;
+      if (objetivo > tope) objetivo = tope;
+      if (objetivo < anchoVista) objetivo = anchoVista;
+      fijarAnchoMundo(objetivo);
+      plan = preparar(salas, nivel);
+      if (plan.alto > altoLibre) {
+        objetivo = anchoVista * plan.alto / altoLibre;
+        if (objetivo > tope) objetivo = tope;
+        if (objetivo > anchoMundo) {
+          fijarAnchoMundo(objetivo);
+          plan = preparar(salas, nivel);
+        }
+      }
+      e = escalaDe(anchoVista, altoLibre, plan.alto, anchoMundo);
+    }
+    salasEl.style.width = anchoMundo + "px";
     salasEl.style.height = plan.alto + "px";
     salasEl.style.transform = "scale(" + e + ")";
-    salasEl.style.transformOrigin = "top center";
+    salasEl.style.transformOrigin = "top left";
+    escalaEl.style.width = Math.floor(anchoMundo * e) + "px";
     escalaEl.style.height = Math.floor(plan.alto * e) + "px";
-    for (var i = 0; i < plan.corr.segmentos.length; i++) {
+    document.documentElement.style.setProperty("--maz-escala", String(e));
+    for (i = 0; i < plan.corr.segmentos.length; i++) {
       var pas = pasilloEl(plan.corr.segmentos[i], nivel);
       if (pas) salasEl.appendChild(pas);
     }
@@ -1423,14 +1478,15 @@
     html.style.removeProperty("--maz-fuego");
     html.style.removeProperty("--maz-marco");
     html.style.removeProperty("--maz-marco-corte");
+    html.style.removeProperty("--maz-escala");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta && temaOriginal) meta.setAttribute("content", temaOriginal);
   }
 
   var temaOriginal = "";
 
-  function firmaDe(salas, nivel, ancho) {
-    var partes = [String(ancho), nivel.id, atlasEstado];
+  function firmaDe(salas, nivel, ancho, altoLibre) {
+    var partes = [String(ancho), String(altoLibre || 0), nivel.id, atlasEstado];
     for (var i = 0; i < salas.length; i++) {
       var ids = [];
       for (var j = 0; j < salas[i].apps.length; j++) {
@@ -1453,7 +1509,8 @@
     if (atlasEstado === "cargando") return;
     aplicarMarco(nivel);
     var ancho = (lienzoEl && lienzoEl.clientWidth) || window.innerWidth;
-    var firma = firmaDe(salas, nivel, ancho);
+    var altoLibre = lienzoEl ? lienzoEl.clientHeight : 0;
+    var firma = firmaDe(salas, nivel, ancho, altoLibre);
     if (!forzar && firma === firmaActual) return;
     firmaActual = firma;
     if (dialogoPila && dialogoPila.hasAttribute("open")) cerrarDialogo(dialogoPila);
