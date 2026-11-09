@@ -11,11 +11,12 @@
   var S3 = "#5a504a";
   var K = "#171110";
   var HL = "#6e645c";
-  var ANCHO = 352;
+  var anchoMundo = 352;
+  var MUNDO_PAD = 8;
   var HUECO = 16;
   var MURO = 8;
   var MARGEN = 12;
-  var CAB = 22;
+  var CAB = 34;
   var BANDA_BESTIAS = 34;
   var OBJ = 64;
   var PLACA_W = 76;
@@ -24,6 +25,7 @@
   var TITULO_HOLGURA = 60;
   var lienzoTitulo = null;
   var CELDA_H = 112;
+  var itemZoom = 1;
   var fases = null;
   var raiz = null;
   var placa = null;
@@ -380,8 +382,138 @@
     return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
   }
 
-  function huella(cx, by) {
-    return { x: cx - PLACA_W / 2, y: by - OBJ, w: PLACA_W, h: OBJ + 4 + PLACA_H };
+  var LAYOUT_NIVEL = null;
+
+  function nivelesLayout() {
+    return [
+      { mul: 2, fs: 10, placaW: 80, placaH: 32, obj: 64 },
+      { mul: 1, fs: 10, placaW: 68, placaH: 30, obj: 32 },
+      { mul: 1, fs: 9, placaW: 60, placaH: 26, obj: 32 },
+      { mul: 1, fs: 9, placaW: 56, placaH: 24, obj: 24 },
+      { mul: 1, fs: 9, placaW: 52, placaH: 22, obj: 16 }
+    ];
+  }
+
+  function aplicarLayoutNivel(nv) {
+    LAYOUT_NIVEL = nv || nivelesLayout()[1];
+    itemZoom = LAYOUT_NIVEL.mul >= 2 ? 2 : 1;
+  }
+
+  function layoutActivo(sala) {
+    return (sala && sala.layout) || LAYOUT_NIVEL || nivelesLayout()[1];
+  }
+
+  function spriteMul(sala) {
+    var nv = layoutActivo(sala);
+    return nv.mul >= 2 ? 2 : 1;
+  }
+
+  function placaW(sala) { return layoutActivo(sala).placaW; }
+  function placaH(sala) { return layoutActivo(sala).placaH; }
+  function objH(sala) { return layoutActivo(sala).obj; }
+  function labelFs(sala) { return layoutActivo(sala).fs; }
+  function celdaW(sala) {
+    var nv = layoutActivo(sala);
+    return Math.max(nv.placaW + 4, nv.obj + 12);
+  }
+  function itemAlto(sala) {
+    var nv = layoutActivo(sala);
+    return nv.obj + 4 + nv.placaH;
+  }
+
+  function huella(cx, by, sala) {
+    var pw = placaW(sala);
+    return { x: cx - pw / 2, y: by - objH(sala), w: pw, h: itemAlto(sala) };
+  }
+
+  function innerSala(sala) {
+    var padX = MURO + 6;
+    var top = MURO + CAB + 2;
+    var bot = MURO + 4;
+    return {
+      x: sala.x + padX,
+      y: sala.y + top,
+      w: Math.max(40, sala.w - 2 * padX),
+      h: Math.max(40, sala.h - top - bot)
+    };
+  }
+
+  function tituloCaja(sala) {
+    return { x: sala.x + 4, y: sala.y + 2, w: Math.max(24, sala.w - 16), h: CAB };
+  }
+
+  function cabeGrid(inner, k, cellW, cellH) {
+    if (k < 1) return { cols: 1, rows: 1, cellW: cellW, cellH: cellH };
+    if (cellW > inner.w || cellH > inner.h) return null;
+    var maxCols = Math.max(1, Math.floor(inner.w / cellW));
+    var maxRows = Math.max(1, Math.floor(inner.h / cellH));
+    if (maxCols * maxRows < k) return null;
+    /* Prefer more columns when height is tight, but never shrink below item footprint. */
+    var cols = Math.min(k, maxCols);
+    var rows = Math.ceil(k / cols);
+    while (rows > maxRows && cols < k && cols < maxCols) {
+      cols += 1;
+      rows = Math.ceil(k / cols);
+    }
+    if (rows > maxRows) return null;
+    return { cols: cols, rows: rows, cellW: cellW, cellH: cellH };
+  }
+
+  function elegirLayoutSala(sala) {
+    var k = Math.max(1, sala.apps ? sala.apps.length : sala.slots || 1);
+    if (sala.fase === CFG.FASE_ENERGIA) {
+      /* trophy is decoration, not a grid slot */
+    }
+    var inner = innerSala(sala);
+    var niveles = nivelesLayout();
+    var i, nv, cellW, cellH, grid;
+    for (i = 0; i < niveles.length; i++) {
+      nv = niveles[i];
+      cellW = Math.max(nv.placaW + 4, nv.obj + 12) + 4;
+      cellH = nv.obj + 4 + nv.placaH + 4;
+      grid = cabeGrid(inner, k, cellW, cellH);
+      if (grid) {
+        sala.layout = {
+          mul: nv.mul,
+          fs: nv.fs,
+          placaW: nv.placaW,
+          placaH: nv.placaH,
+          obj: nv.obj,
+          cols: grid.cols,
+          rows: grid.rows,
+          cellW: grid.cellW,
+          cellH: grid.cellH
+        };
+        return sala.layout;
+      }
+    }
+    /* last resort: shrink icon/label to fill inner without overlap */
+    var minCellW = 44;
+    var minCellH = 36;
+    var cols = Math.max(1, Math.min(k, Math.floor(inner.w / minCellW)));
+    if (cols < 1) cols = 1;
+    /* grow columns until rows fit height */
+    while (cols < k && Math.ceil(k / cols) * minCellH > inner.h) cols += 1;
+    /* prefer 2 columns when width allows readable labels */
+    if (k >= 2 && inner.w >= 88 && cols < 2 && Math.ceil(k / 2) * minCellH <= inner.h) cols = 2;
+    var rows = Math.ceil(k / cols);
+    var cw = Math.floor(inner.w / cols);
+    var ch = Math.floor(inner.h / rows);
+    if (cw < minCellW) cw = minCellW;
+    if (ch < minCellH) ch = minCellH;
+    var placaH = Math.min(24, Math.max(18, Math.floor(ch * 0.4)));
+    var obj = Math.max(16, Math.min(32, ch - 4 - placaH));
+    if (obj + 4 + placaH > ch) {
+      obj = Math.max(12, ch - 4 - placaH);
+    }
+    var placaW = Math.max(36, Math.min(cw - 2, cw - 4));
+    /* footprint must fit in cell */
+    if (placaW > cw) placaW = cw;
+    if (obj + 4 + placaH > ch) {
+      placaH = Math.max(16, ch - 4 - obj);
+    }
+    sala.layout = { mul: 1, fs: 9, placaW: placaW, placaH: placaH, obj: obj, cols: cols, rows: rows, cellW: cw, cellH: ch };
+    return sala.layout;
   }
 
   function muescaRect(s, e, m) {
@@ -397,28 +529,56 @@
     var t = String(texto || "");
     try {
       if (!lienzoTitulo) lienzoTitulo = document.createElement("canvas").getContext("2d");
-      lienzoTitulo.font = "700 11px " + getComputedStyle(document.body).fontFamily;
+      lienzoTitulo.font = "700 12px " + getComputedStyle(document.body).fontFamily;
       return Math.ceil(lienzoTitulo.measureText(t).width);
     } catch (e) {
       return t.length * 7;
     }
   }
 
-  function medir(sala) {
+  function pistaAncho() {
+    var n = anchoMundo - 2 * MUNDO_PAD;
+    return n > 128 ? n : 128;
+  }
+
+  function minAnchoSala(sala) {
     var k = sala.slots;
     if (k < 1) k = 1;
     var h = fnv(sala.fase);
-    var w = k <= 2 ? 128 + (h % 2) * 16 : k <= 4 ? 208 + (h % 2) * 16 : ANCHO;
+    var w = k <= 2 ? 144 + (h % 2) * 16 : k <= 4 ? 208 + (h % 2) * 16 : 288 + (h % 2) * 16;
     var titulo = anchoTitulo(sala.nombre) + TITULO_HOLGURA;
-    if (w < titulo) w = titulo <= 208 ? 208 + (h % 2) * 16 : ANCHO;
-    var porFila = Math.max(1, Math.floor((w - 2 * (MURO + MARGEN)) / CELDA_W));
-    var filas = Math.ceil(k / porFila);
-    var alto = CAB + 2 * MURO + 2 * MARGEN + filas * CELDA_H + BANDA_BESTIAS + (fnv(sala.fase + "h") % 2) * 16;
-    sala.w = w;
-    sala.h = snap(alto, 16);
-    sala.porFila = porFila;
-    sala.filas = filas;
+    if (w < titulo) w = titulo;
+    var tope = pistaAncho();
+    if (w > tope) w = tope;
+    return snap(w, 8);
+  }
+
+  function filasDe(sala, w) {
+    var k = sala.slots;
+    if (k < 1) k = 1;
+    var cw = celdaW();
+    var porFila = Math.max(1, Math.floor((w - 2 * (MURO + MARGEN)) / cw));
+    return { porFila: porFila, filas: Math.ceil(k / porFila) };
+  }
+
+  function altoMinSala(sala, w) {
+    var f = filasDe(sala, w);
+    var ch = Math.max(itemAlto() + 8, Math.round(CELDA_H * (spriteMul() >= 2 ? 1.25 : 0.7)));
+    return CAB + 2 * MURO + 2 * MARGEN + f.filas * ch + BANDA_BESTIAS;
+  }
+
+  function aplicarMedida(sala, w, hForzado) {
+    var f = filasDe(sala, w);
+    sala.w = Math.floor(w);
+    sala.porFila = f.porFila;
+    sala.filas = f.filas;
     sala.muescas = [];
+    if (hForzado && hForzado > 0) sala.h = Math.floor(hForzado);
+    else sala.h = snap(altoMinSala(sala, w), 2);
+  }
+
+  function medir(sala) {
+    aplicarMedida(sala, minAnchoSala(sala));
   }
 
   function sumaAnchos(arr) {
@@ -427,40 +587,83 @@
     return n;
   }
 
-  function ubicar(salas) {
-    var y = 0;
-    var banda = [];
+  function bandasDe(salas, altoLibre) {
     var bandas = [];
     var i;
-    for (i = 0; i < salas.length; i++) {
-      medir(salas[i]);
-      if (banda.length && sumaAnchos(banda) + HUECO * banda.length + salas[i].w > ANCHO) {
-        bandas.push(banda);
-        banda = [];
-      }
-      banda.push(salas[i]);
+    for (i = 0; i < salas.length; i++) medir(salas[i]);
+    var porBanda = 2;
+    var pista = pistaAncho();
+    if (altoLibre > 32) {
+      var bands2 = Math.max(1, Math.ceil(salas.length / 2));
+      var h2 = Math.floor((altoLibre - 8 * (bands2 - 1)) / bands2);
+      var w3 = Math.floor((pista - HUECO * 2) / 3);
+      if (h2 < 150 && w3 >= 88 && salas.length >= 3) porBanda = 3;
     }
-    if (banda.length) bandas.push(banda);
+    for (i = 0; i < salas.length; i += porBanda) {
+      bandas.push(salas.slice(i, i + porBanda));
+    }
+    return bandas;
+  }
+
+  function ubicar(salas, altoLibre) {
+    var pista = pistaAncho();
+    var bandas = bandasDe(salas, altoLibre);
+    var i, j;
     for (i = 0; i < bandas.length; i++) {
       var grupo = bandas[i];
-      var libre = ANCHO - sumaAnchos(grupo) - HUECO * (grupo.length - 1);
-      var clave = "banda";
-      for (var j = 0; j < grupo.length; j++) clave += grupo[j].fase;
-      var x = libre > 0 ? snap(libre * (i % 2 ? 0.75 : 0.25) + (fnv(clave) % 17) - 8) : 0;
-      if (x < 0) x = 0;
-      if (x > libre) x = libre;
-      var altoB = 0;
-      for (j = 0; j < grupo.length; j++) {
-        var s = grupo[j];
-        s.x = 12 + x;
-        s.y = y;
-        x += s.w + HUECO;
-        var bajo = s.y + s.h - y;
-        if (bajo > altoB) altoB = bajo;
-      }
-      y += altoB + 8;
+      var huecos = HUECO * (grupo.length - 1);
+      var base = Math.floor((pista - huecos) / grupo.length);
+      if (base < 96) base = Math.floor((pista - huecos) / Math.max(grupo.length, 1));
+      var sobra = pista - huecos - base * grupo.length;
+      if (sobra < 0) sobra = 0;
+      for (j = 0; j < grupo.length; j++) aplicarMedida(grupo[j], base + (j < sobra ? 1 : 0));
     }
+    var nBandas = bandas.length;
+    var gap = 8;
+    var altoDisp = altoLibre > 32 ? altoLibre : 0;
+    var altoBanda = 0;
+    if (altoDisp > 0 && nBandas > 0) {
+      altoBanda = Math.floor((altoDisp - gap * (nBandas - 1)) / nBandas);
+      if (altoBanda < 64) altoBanda = 64;
+    }
+    var resto = 0;
+    if (altoDisp > 0 && nBandas > 0) {
+      resto = altoDisp - (altoBanda * nBandas + gap * (nBandas - 1));
+      if (resto < 0) resto = 0;
+    }
+    var y = 0;
+    for (i = 0; i < bandas.length; i++) {
+      var grupo2 = bandas[i];
+      var minH = 0;
+      for (j = 0; j < grupo2.length; j++) {
+        var mh = altoMinSala(grupo2[j], grupo2[j].w);
+        if (mh > minH) minH = mh;
+      }
+      var hB = altoDisp > 0 ? altoBanda + (i < resto ? 1 : 0) : minH;
+      var x = MUNDO_PAD;
+      for (j = 0; j < grupo2.length; j++) {
+        aplicarMedida(grupo2[j], grupo2[j].w, hB);
+        grupo2[j].x = x;
+        grupo2[j].y = y;
+        x += grupo2[j].w + HUECO;
+      }
+      y += hB + (i < nBandas - 1 ? gap : 0);
+    }
+    if (altoDisp > 0) return altoDisp;
     return y;
+  }
+
+  function elegirItemZoom(nSalas, altoLibre) {
+    var pista = pistaAncho();
+    var bandas = Math.max(1, Math.ceil(Math.max(nSalas, 1) / 2));
+    var gap = 8;
+    var hB = Math.floor((Math.max(altoLibre, 120) - gap * (bandas - 1)) / bandas);
+    var cols = Math.min(2, Math.max(1, nSalas));
+    var wB = Math.floor((pista - HUECO * (cols - 1)) / cols);
+    var innerH = hB - CAB - 2 * MURO - 2 * MARGEN - BANDA_BESTIAS;
+    var innerW = wB - 2 * (MURO + MARGEN);
+    if (innerH >= 160 && innerW >= 96) return 2;
+    return 1;
   }
 
   function pasillos(salas) {
@@ -502,39 +705,79 @@
   }
 
   function colocarSlots(sala, nivel) {
-    var x0 = sala.x + MURO + MARGEN;
-    var y0 = sala.y + MURO + CAB;
-    var x1 = sala.x + sala.w - MURO - MARGEN;
-    var y1 = sala.y + sala.h - MURO - BANDA_BESTIAS;
-    var rnd = mulberry(fnv(sala.fase + "|" + nivel));
-    var k = sala.slots;
-    var altoFila = (y1 - y0) / sala.filas;
+    var lay = elegirLayoutSala(sala);
+    var inner = innerSala(sala);
+    var k = Math.max(0, sala.apps ? sala.apps.length : sala.slots || 0);
     var out = [];
-    var r, c, n, libre, off, cx, holg, by;
-    for (r = 0; r < sala.filas; r++) {
-      n = Math.min(sala.porFila, k - r * sala.porFila);
-      libre = (x1 - x0) - n * CELDA_W;
-      off = libre * rnd();
-      for (c = 0; c < n; c++) {
-        cx = x0 + off + (c + 0.5) * CELDA_W + (rnd() - 0.5) * (CELDA_W - PLACA_W);
-        holg = altoFila - (OBJ + 4 + PLACA_H);
-        by = y0 + r * altoFila + OBJ + rnd() * holg;
-        out.push([Math.round(cx), Math.round(by)]);
-      }
+    var cols = lay.cols;
+    var rows = lay.rows;
+    var cw = lay.cellW;
+    var ch = lay.cellH;
+    var gridW = cols * cw;
+    var gridH = rows * ch;
+    var x0 = inner.x + Math.floor((inner.w - gridW) / 2);
+    var y0 = inner.y + Math.floor((inner.h - gridH) / 2);
+    var i, r, c, cx, by, box;
+    var ih = lay.obj + 4 + lay.placaH;
+    var oh = lay.obj;
+    var pw = lay.placaW;
+    if (pw > cw - 2) pw = Math.max(24, cw - 2);
+    if (ih > ch - 2) {
+      ih = ch - 2;
+      oh = Math.max(12, ih - 4 - lay.placaH);
     }
-    out.sort(function (p, q) { return p[1] - q[1] || p[0] - q[0]; });
+    sala.itemBoxes = [];
+    for (i = 0; i < k; i++) {
+      r = Math.floor(i / cols);
+      c = i % cols;
+      var cellX = x0 + c * cw;
+      var cellY = y0 + r * ch;
+      cx = cellX + Math.floor(cw / 2);
+      var top = cellY + Math.floor((ch - ih) / 2);
+      by = top + oh;
+      out.push([Math.round(cx), Math.round(by)]);
+      box = { x: cx - pw / 2, y: top, w: pw, h: ih };
+      sala.itemBoxes.push(box);
+    }
+    lay.placaW = pw;
+    lay.obj = oh;
+    lay.placaH = Math.max(16, ih - 4 - oh);
+    sala.porFila = cols;
+    sala.filas = rows;
+    sala.muescas = [];
     var cand = ["ne", "so", "se"];
     var o = fnv(sala.fase + "e") % 3;
     var quiere = fnv(sala.fase + "n") % 3;
-    for (var i = 0; i < 3; i++) {
+    for (i = 0; i < 3; i++) {
       if (sala.muescas.length >= quiere) break;
       var e = cand[(o + i) % 3];
-      var m = muescaRect(sala, e, 32 + MARGEN);
+      var m = muescaRect(sala, e, 28);
       var toca = false;
-      for (var p = 0; p < out.length; p++) if (cruza(huella(out[p][0], out[p][1]), m)) toca = true;
+      for (var p = 0; p < sala.itemBoxes.length; p++) if (cruza(sala.itemBoxes[p], m)) toca = true;
       if (!toca) sala.muescas.push(e);
     }
     return out;
+  }
+
+  function huecoLibre(sala, w, h) {
+    var inner = innerSala(sala);
+    var boxes = (sala.itemBoxes || []).concat([tituloCaja(sala)]);
+    var candidates = [
+      { x: inner.x, y: inner.y + inner.h - h, w: w, h: h },
+      { x: inner.x + inner.w - w, y: inner.y + inner.h - h, w: w, h: h },
+      { x: inner.x + inner.w - w, y: inner.y, w: w, h: h },
+      { x: inner.x, y: inner.y, w: w, h: h },
+      { x: Math.round(inner.x + (inner.w - w) / 2), y: inner.y + inner.h - h, w: w, h: h }
+    ];
+    var i, j, ok, c;
+    for (i = 0; i < candidates.length; i++) {
+      c = candidates[i];
+      if (c.x < inner.x || c.y < inner.y || c.x + c.w > inner.x + inner.w || c.y + c.h > inner.y + inner.h) continue;
+      ok = true;
+      for (j = 0; j < boxes.length; j++) if (cruza(c, boxes[j])) { ok = false; break; }
+      if (ok) return c;
+    }
+    return null;
   }
 
   function ordenar(proyectos) {
@@ -549,19 +792,8 @@
   function asignar(proyectos, sl) {
     var proys = ordenar(proyectos);
     var n = Math.min(proys.length, sl.length);
-    var usados = [];
     var mapa = {};
-    for (var i = 0; i < n; i++) {
-      var p = proys[i];
-      var k = fnv((p.id || p.nombre) + "s") % n;
-      var guard = 0;
-      while (usados.indexOf(k) >= 0 && guard < n) {
-        k = (k + 1) % n;
-        guard++;
-      }
-      usados.push(k);
-      mapa[p.id] = sl[k];
-    }
+    for (var i = 0; i < n; i++) mapa[proys[i].id] = sl[i];
     return { mapa: mapa };
   }
 
@@ -632,8 +864,7 @@
   }
 
   function slotsVisibles(sala) {
-    var n = sala.apps.length;
-    return sala.fase === CFG.FASE_ENERGIA ? n + 1 : n;
+    return Math.max(1, sala.apps.length);
   }
 
   function leerApp(card) {
@@ -735,7 +966,7 @@
     return 0;
   }
 
-  function preparar(salas, nivel) {
+  function preparar(salas, nivel, altoLibre) {
     var copias = [];
     for (var i = 0; i < salas.length; i++) {
       copias.push({
@@ -745,7 +976,7 @@
         slots: slotsVisibles(salas[i])
       });
     }
-    var alto = ubicar(copias);
+    var alto = ubicar(copias, altoLibre);
     var corr = pasillos(copias);
     for (i = 0; i < copias.length; i++) copias[i].pts = colocarSlots(copias[i], nivel.id);
     return { salas: copias, alto: alto, corr: corr };
@@ -829,6 +1060,10 @@
     var lista = DECOS[nivel] || [];
     var out = [];
     if (!lista.length) return out;
+    var boxes = (sala.itemBoxes || []).map(function (b) {
+      return { x: b.x - sala.x, y: b.y - sala.y, w: b.w, h: b.h };
+    });
+    boxes.push({ x: 8, y: 2, w: Math.max(24, sala.w - 48), h: CAB - 2 });
     for (var j = 0; j < 2; j++) {
       var nombre = lista[fnv(sala.fase + nivel + String(j)) % lista.length];
       var f = frame(nivel + "/deco/" + nombre);
@@ -840,6 +1075,17 @@
       if (x < 8) x = 8;
       if (x + fw > sala.w - 8) x = Math.max(8, sala.w - 8 - fw);
       if (y < 8) y = 8;
+      var box = { x: x, y: y, w: fw, h: fh };
+      var toca = false;
+      for (var bi = 0; bi < boxes.length; bi++) if (cruza(box, boxes[bi])) { toca = true; break; }
+      if (toca) {
+        var hueco = huecoLibre(sala, fw, fh);
+        if (!hueco) continue;
+        x = hueco.x - sala.x;
+        y = hueco.y - sala.y;
+        box = { x: x, y: y, w: fw, h: fh };
+      }
+      boxes.push(box);
       out.push({ nombre: nombre, x: x, y: y, fw: fw, fh: fh });
     }
     return out;
@@ -956,7 +1202,7 @@
     var s = document.createElement("span");
     s.className = "maz-px";
     s.setAttribute("aria-hidden", "true");
-    var sc = escala || 1;
+    var sc = escala == null ? spriteMul() : escala;
     s.style.width = (f.w * sc) + "px";
     s.style.height = (f.h * sc) + "px";
     s.style.backgroundImage = atlasCss;
@@ -1001,15 +1247,21 @@
     return placaCache[clave];
   }
 
-  function rotulo(nombre, nivel) {
+  function rotulo(nombre, nivel, sala) {
     var el = document.createElement("span");
     el.className = "maz-rotulo";
     el.setAttribute("aria-hidden", "true");
-    var url = fondoNueve("placa/" + nivel + "-9s", PLACA_W, PLACA_H);
+    var pw = placaW(sala);
+    var ph = placaH(sala);
+    el.style.width = pw + "px";
+    el.style.height = ph + "px";
+    el.style.top = objH(sala) + "px";
+    var url = fondoNueve("placa/" + nivel + "-9s", pw, ph);
     if (url) el.style.backgroundImage = "url(" + url + ")";
     else el.classList.add("maz-rotulo-simple");
     var t = document.createElement("span");
     t.textContent = nombre;
+    t.style.fontSize = labelFs(sala) + "px";
     el.appendChild(t);
     return el;
   }
@@ -1032,8 +1284,10 @@
   function baseEl(tag, clase, sala, cx, by) {
     var el = document.createElement(tag);
     el.className = clase;
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW(sala) / 2) + "px";
+    el.style.top = (by - sala.y - objH(sala)) + "px";
+    el.style.width = placaW(sala) + "px";
+    el.style.height = itemAlto(sala) + "px";
     el.style.zIndex = String(10000 + by);
     return el;
   }
@@ -1041,7 +1295,7 @@
   function ponerEstado(el, app, left, top) {
     var nombre = estadoSprite(app.estado);
     if (!nombre) return;
-    var sp = spriteEl(nombre, 2);
+    var sp = spriteEl(nombre, spriteMul());
     if (!sp) return;
     sp.style.position = "absolute";
     sp.style.left = left + "px";
@@ -1079,92 +1333,123 @@
     el.appendChild(c);
   }
 
+  function ajustarSpriteObj(sp, sala) {
+    var nv = layoutActivo(sala);
+    var target = nv.obj;
+    var w = parseFloat(sp.style.width) || target;
+    if (w > 0 && Math.abs(w - target) > 0.5) {
+      var s = target / w;
+      sp.style.width = target + "px";
+      sp.style.height = (parseFloat(sp.style.height) * s) + "px";
+      var bp = sp.style.backgroundPosition.split(" ");
+      if (bp.length === 2) {
+        sp.style.backgroundPosition = (parseFloat(bp[0]) * s) + "px " + (parseFloat(bp[1]) * s) + "px";
+      }
+      var bs = sp.style.backgroundSize.split(" ");
+      if (bs.length === 2) {
+        sp.style.backgroundSize = (parseFloat(bs[0]) * s) + "px " + (parseFloat(bs[1]) * s) + "px";
+      }
+    }
+  }
+
   function objetoEl(sala, app, cx, by, nivel) {
+    if (sala.layout) aplicarLayoutNivel(sala.layout);
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
     el.className = "maz-obj " + claseEstado(app);
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW(sala) / 2) + "px";
+    el.style.top = (by - sala.y - objH(sala)) + "px";
+    el.style.width = placaW(sala) + "px";
+    el.style.height = itemAlto(sala) + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
     var asp = aspecto(app);
-    var sp = spriteEl(asp.objeto, 2);
+    var sp = spriteEl(asp.objeto, spriteMul(sala));
     if (sp) {
-      var peana = spriteEl("peana/" + (sala.fase === "2" || sala.fase === "3" ? "23" : sala.fase), 2);
+      ajustarSpriteObj(sp, sala);
+      var peana = spriteEl("peana/" + (sala.fase === "2" || sala.fase === "3" ? "23" : sala.fase), spriteMul(sala));
       if (peana) {
         peana.style.position = "absolute";
-        peana.style.left = "6px";
-        peana.style.top = "48px";
+        peana.style.left = Math.round(3 * spriteMul(sala)) + "px";
+        peana.style.top = Math.round(24 * spriteMul(sala)) + "px";
         peana.style.zIndex = "0";
         el.appendChild(peana);
       }
       sp.style.position = "absolute";
-      sp.style.left = "6px";
+      sp.style.left = Math.round(3 * spriteMul(sala)) + "px";
       sp.style.top = "0";
       sp.style.zIndex = "1";
       el.appendChild(sp);
-      if (!app.bloqueada) ponerEstado(el, app, 54, 0);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(27 * spriteMul(sala)), 0);
     } else {
       var tema = temaDe(sala.fase === "23" ? "2" : sala.fase);
       var tipos = tema.objetos || ["cofre"];
       respaldo(el, tipos[fnv(semillaDe(app)) % tipos.length], 6, 0, 64, 64);
     }
     if (app.bloqueada) marcarEstado(el, app);
-    el.appendChild(rotulo(app.nombre, nivel.id));
+    el.appendChild(rotulo(app.nombre, nivel.id, sala));
     return el;
   }
 
   function fragmentoEl(sala, app, cx, by, nivel) {
+    if (sala.layout) aplicarLayoutNivel(sala.layout);
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
     el.className = "maz-obj " + claseEstado(app);
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW(sala) / 2) + "px";
+    el.style.top = (by - sala.y - objH(sala)) + "px";
+    el.style.width = placaW(sala) + "px";
+    el.style.height = itemAlto(sala) + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
-    var sp = spriteEl(fragmentoDe(app.completadas), 2);
+    var sp = spriteEl(fragmentoDe(app.completadas), spriteMul(sala));
     if (sp) {
+      ajustarSpriteObj(sp, sala);
       sp.style.position = "absolute";
-      sp.style.left = "22px";
+      sp.style.left = Math.round(11 * spriteMul(sala)) + "px";
       sp.style.top = "0";
       el.appendChild(sp);
-      if (!app.bloqueada) ponerEstado(el, app, 38, 0);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(19 * spriteMul(sala)), 0);
     } else respaldo(el, "cristal", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
-    el.appendChild(rotulo(app.nombre, nivel.id));
+    el.appendChild(rotulo(app.nombre, nivel.id, sala));
     return el;
   }
 
   function cajaEl(sala, app, cx, by, nivel) {
+    if (sala.layout) aplicarLayoutNivel(sala.layout);
     var el = app.href ? document.createElement("a") : document.createElement("span");
     if (app.href) el.href = app.href;
     el.className = "maz-obj " + claseEstado(app);
-    el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
-    el.style.top = (by - sala.y - OBJ) + "px";
+    el.style.left = (cx - sala.x - placaW(sala) / 2) + "px";
+    el.style.top = (by - sala.y - objH(sala)) + "px";
+    el.style.width = placaW(sala) + "px";
+    el.style.height = itemAlto(sala) + "px";
     el.style.zIndex = String(10000 + by);
     el.title = app.nombre;
     el.setAttribute("aria-label", app.nombre);
     var asp = aspecto(app);
-    var sp = spriteEl("desc/caja/" + (fnv(semillaDe(app)) % 2), 2);
+    var sp = spriteEl("desc/caja/" + (fnv(semillaDe(app)) % 2), spriteMul(sala));
     if (sp) {
+      /* caja keeps atlas scale; icon sized separately */
       sp.style.position = "absolute";
-      sp.style.left = "14px";
-      sp.style.top = "16px";
+      sp.style.left = Math.round(7 * spriteMul(sala)) + "px";
+      sp.style.top = Math.round(8 * spriteMul(sala)) + "px";
       el.appendChild(sp);
-      var ic = spriteEl(asp.icono, 2);
+      var ic = spriteEl(asp.icono, spriteMul(sala));
       if (ic) {
         ic.style.position = "absolute";
-        ic.style.left = "30px";
-        ic.style.top = "36px";
+        ic.style.left = Math.round(15 * spriteMul(sala)) + "px";
+        ic.style.top = Math.round(18 * spriteMul(sala)) + "px";
         ic.style.zIndex = "2";
         el.appendChild(ic);
       }
-      if (!app.bloqueada) ponerEstado(el, app, 46, 16);
+      if (!app.bloqueada) ponerEstado(el, app, Math.round(23 * spriteMul(sala)), Math.round(8 * spriteMul(sala)));
     } else respaldo(el, "caja", 6, 0, 64, 64);
     if (app.bloqueada) marcarEstado(el, app);
-    el.appendChild(rotulo(app.nombre, nivel.id));
+    el.appendChild(rotulo(app.nombre, nivel.id, sala));
     return el;
   }
 
@@ -1172,17 +1457,23 @@
     return { x: sala.w - 68, y: sala.h - 60, w: 48, h: 48 };
   }
 
-  function binEl(sala) {
-    var r = binRect(sala);
+  function binElAt(sala, r) {
     var el = document.createElement("span");
     el.className = "maz-bin";
-    el.style.left = r.x + "px";
-    el.style.top = r.y + "px";
-    el.style.zIndex = "30000";
+    el.style.left = (r.x - sala.x) + "px";
+    el.style.top = (r.y - sala.y) + "px";
+    el.style.width = "48px";
+    el.style.height = "48px";
+    el.style.zIndex = "4";
     el.setAttribute("aria-hidden", "true");
     var sp = spriteEl("desc/contenedor/vacio", 1.5);
     el.appendChild(sp || spriteObjeto("chatarra"));
     return el;
+  }
+
+  function binEl(sala) {
+    var hueco = huecoLibre(sala, 48, 48);
+    return binElAt(sala, hueco || { x: sala.x + binRect(sala).x, y: sala.y + binRect(sala).y, w: 48, h: 48 });
   }
 
   function fuenteEl(sala, pt, apps) {
@@ -1193,7 +1484,9 @@
     el.className = "maz-fuente";
     el.style.left = (cx - sala.x - 36) + "px";
     el.style.top = (by - sala.y - 72) + "px";
-    el.style.zIndex = String(10000 + by);
+    el.style.width = "72px";
+    el.style.height = "80px";
+    el.style.zIndex = "5";
     el.setAttribute("aria-label", sala.nombre);
     var halo = spriteEl("lanz/halo", 1.5);
     if (halo) {
@@ -1230,20 +1523,24 @@
     return best;
   }
 
-  function bestiaEl(sala, nivel) {
+  function bestiaEl(sala, nivel, hueco) {
     var info = CFG.BESTIAS[fnv(sala.fase) % CFG.BESTIAS.length];
     var el = document.createElement("span");
     el.className = "maz-bestia";
     if (nivel.id === "ceniza") el.classList.add("maz-bestia-ceniza");
     el.setAttribute("role", "img");
     el.setAttribute("aria-label", info.nombre);
-    var x = MURO + MARGEN + 4 + (fnv(sala.fase + "b") % Math.max(1, sala.w - 60));
-    if (sala.fase === CFG.FASE_RECICLAJE) {
-      var bin = binRect(sala);
-      if (x + 28 > bin.x && x < bin.x + bin.w) x = Math.max(8, bin.x - 32);
+    var x, y;
+    if (hueco) {
+      x = hueco.x - sala.x;
+      y = hueco.y - sala.y;
+    } else {
+      x = MURO + 8 + (fnv(sala.fase + "b") % Math.max(1, sala.w - 60));
+      y = sala.h - 38;
     }
     el.style.left = x + "px";
-    el.style.top = (sala.h - 38) + "px";
+    el.style.top = y + "px";
+    el.style.zIndex = "4";
     var sp = spriteEl("bestia/" + info.id, 1.75);
     if (sp) el.appendChild(sp);
     else if (ARTE[info.id]) {
@@ -1327,6 +1624,12 @@
     titulo.id = "maz-" + sala.fase;
     titulo.textContent = sala.nombre;
     titulo.title = sala.nombre;
+    if (sala.w < 120) {
+      titulo.style.fontSize = "11px";
+      titulo.style.right = "8px";
+      titulo.style.left = "6px";
+      titulo.style.lineHeight = "1.15";
+    }
     sec.setAttribute("aria-labelledby", titulo.id);
     var decos = hayDibujo() ? planDeco(sala, nivel.id) : [];
     sec.appendChild(dibujarFondo(sala, nivel, puertas, decos));
@@ -1347,34 +1650,41 @@
       }
     }
     if (sala.fase === CFG.FASE_ENERGIA) {
-      var sl = sala.pts.slice();
-      var fuente = elegirFuente(sala, sl);
-      sl = sl.filter(function (p) { return p !== fuente; });
-      sec.appendChild(fuenteEl(sala, fuente, sala.apps));
-      var asg = asignar(sala.apps, sl);
+      var asgE = asignar(sala.apps, sala.pts);
       sala.apps.forEach(function (app) {
-        if (asg.mapa[app.id]) sec.appendChild(fragmentoEl(sala, app, asg.mapa[app.id][0], asg.mapa[app.id][1], nivel));
+        if (asgE.mapa[app.id]) sec.appendChild(fragmentoEl(sala, app, asgE.mapa[app.id][0], asgE.mapa[app.id][1], nivel));
       });
+      var huecoF = huecoLibre(sala, 72, 80);
+      if (huecoF) sec.appendChild(fuenteEl(sala, [huecoF.x + 36, huecoF.y + 72], sala.apps));
     } else if (sala.fase === CFG.FASE_RECICLAJE) {
       var cajas = asignar(sala.apps, sala.pts);
       sala.apps.forEach(function (app) {
         if (cajas.mapa[app.id]) sec.appendChild(cajaEl(sala, app, cajas.mapa[app.id][0], cajas.mapa[app.id][1], nivel));
       });
-      sec.appendChild(binEl(sala));
+      var huecoB = huecoLibre(sala, 48, 48);
+      if (huecoB) sec.appendChild(binElAt(sala, huecoB));
     } else {
       var normal = asignar(sala.apps, sala.pts);
       sala.apps.forEach(function (app) {
         if (normal.mapa[app.id]) sec.appendChild(objetoEl(sala, app, normal.mapa[app.id][0], normal.mapa[app.id][1], nivel));
       });
     }
-    sec.appendChild(bestiaEl(sala, nivel));
+    var huecoBest = huecoLibre(sala, 28, 28);
+    sec.appendChild(bestiaEl(sala, nivel, huecoBest));
     return sec;
   }
 
-  function escalaDe(ancho, altoLibre, altoMundo) {
-    var ew = ancho > 0 ? ancho / 375 : 1;
+  function fijarAnchoMundo(px) {
+    var n = Math.max(296, Math.floor(px));
+    if (n % 2) n -= 1;
+    anchoMundo = n;
+    return n;
+  }
+
+  function escalaDe(ancho, altoLibre, altoMundo, mundo) {
+    var ew = ancho > 0 && mundo > 0 ? ancho / mundo : 1;
     var eh = altoMundo > 0 && altoLibre > 8 ? altoLibre / altoMundo : 1;
-    var e = Math.min(ew, eh);
+    var e = Math.min(1, ew, eh);
     if (!(e > 0)) e = 1;
     return e;
   }
@@ -1383,6 +1693,7 @@
     salasEl.replaceChildren();
     if (!salas.length) {
       escalaEl.style.height = "auto";
+      escalaEl.style.width = "100%";
       salasEl.style.transform = "none";
       salasEl.style.height = "auto";
       salasEl.style.width = "100%";
@@ -1392,15 +1703,22 @@
       salasEl.appendChild(vacio);
       return;
     }
-    var plan = preparar(salas, nivel);
     var altoLibre = lienzoEl ? lienzoEl.clientHeight : 0;
-    var e = escalaDe(ancho, altoLibre, plan.alto);
-    salasEl.style.width = "375px";
+    var anchoVista = Math.max(296, Math.floor(ancho || 0));
+    var i;
+    var plan;
+    fijarAnchoMundo(anchoVista);
+    itemZoom = elegirItemZoom(salas.length, altoLibre > 8 ? altoLibre : 240);
+    plan = preparar(salas, nivel, altoLibre > 8 ? altoLibre : 0);
+    salasEl.style.width = anchoMundo + "px";
     salasEl.style.height = plan.alto + "px";
-    salasEl.style.transform = "scale(" + e + ")";
-    salasEl.style.transformOrigin = "top center";
-    escalaEl.style.height = Math.floor(plan.alto * e) + "px";
-    for (var i = 0; i < plan.corr.segmentos.length; i++) {
+    salasEl.style.transform = "none";
+    escalaEl.style.width = anchoMundo + "px";
+    escalaEl.style.height = plan.alto + "px";
+    document.documentElement.style.setProperty("--maz-escala", "1");
+    document.documentElement.style.setProperty("--maz-item", String(itemZoom));
+    document.documentElement.style.setProperty("--maz-label-fs", "10px");
+    for (i = 0; i < plan.corr.segmentos.length; i++) {
       var pas = pasilloEl(plan.corr.segmentos[i], nivel);
       if (pas) salasEl.appendChild(pas);
     }
@@ -1423,14 +1741,16 @@
     html.style.removeProperty("--maz-fuego");
     html.style.removeProperty("--maz-marco");
     html.style.removeProperty("--maz-marco-corte");
+    html.style.removeProperty("--maz-escala");
+    html.style.removeProperty("--maz-item");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta && temaOriginal) meta.setAttribute("content", temaOriginal);
   }
 
   var temaOriginal = "";
 
-  function firmaDe(salas, nivel, ancho) {
-    var partes = [String(ancho), nivel.id, atlasEstado];
+  function firmaDe(salas, nivel, ancho, altoLibre) {
+    var partes = [String(ancho), String(altoLibre || 0), nivel.id, atlasEstado];
     for (var i = 0; i < salas.length; i++) {
       var ids = [];
       for (var j = 0; j < salas[i].apps.length; j++) {
@@ -1453,7 +1773,8 @@
     if (atlasEstado === "cargando") return;
     aplicarMarco(nivel);
     var ancho = (lienzoEl && lienzoEl.clientWidth) || window.innerWidth;
-    var firma = firmaDe(salas, nivel, ancho);
+    var altoLibre = lienzoEl ? lienzoEl.clientHeight : 0;
+    var firma = firmaDe(salas, nivel, ancho, altoLibre);
     if (!forzar && firma === firmaActual) return;
     firmaActual = firma;
     if (dialogoPila && dialogoPila.hasAttribute("open")) cerrarDialogo(dialogoPila);
