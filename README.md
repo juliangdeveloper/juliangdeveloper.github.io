@@ -23,7 +23,7 @@ Juegos y herramientas que se abren en el navegador, sin instalar.
 
 HTML, CSS y JavaScript, sin build. Los datos quedan en `localStorage`.
 
-Versión actual: `23`.
+Versión actual: `24`.
 
 ## Licencia
 
