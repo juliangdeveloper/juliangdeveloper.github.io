@@ -4,7 +4,7 @@ Juegos y herramientas que se abren en el navegador, sin instalar.
 
 **[Abrir el portafolio](https://juliangdeveloper.github.io/)**
 
-<img src="img/portafolio.png?v=23" alt="Portafolio en el celular con las tarjetas de los 14 proyectos en Planeación" width="320">
+<img src="img/portafolio.png?v=24" alt="Portafolio en el celular con las tarjetas de los 14 proyectos en Planeación" width="320">
 
 ## Cómo se usa
 
