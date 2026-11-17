@@ -4,11 +4,11 @@ Juegos y herramientas que se abren en el navegador, sin instalar.
 
 **[Abrir el portafolio](https://juliangdeveloper.github.io/)**
 
-<img src="img/portafolio.png?v=24" alt="Portafolio en el celular con las tarjetas de los 14 proyectos en Planeación" width="320">
+<img src="img/portafolio.png?v=25" alt="Portafolio en el celular con las tarjetas de los 14 proyectos en Planeación" width="320">
 
 ## Cómo se usa
 
-- Toca una tarjeta para ver el detalle. El botón abre la app a pantalla completa, con **Inicio** para volver.
+- Toca una tarjeta para ver el detalle. La tarjeta se agranda desde la lista y vuelve a su lugar al cerrarla. El botón abre la app a pantalla completa, con **Inicio** para volver.
 - **＋ Agregar proyecto** acepta `usuario.github.io/repo`, `github.com/usuario/repo` o `usuario/repo`.
 - **✕** deja de seguir un proyecto y se puede deshacer. **Restaurar proyectos por defecto** devuelve los de fábrica y conserva los que agregaste. El proyecto fijo se queda y no tiene ✕.
 - La lista queda en este navegador. En el celular y en la tablet la pantalla no se desplaza.
@@ -23,7 +23,7 @@ Juegos y herramientas que se abren en el navegador, sin instalar.
 
 HTML, CSS y JavaScript, sin build. Los datos quedan en `localStorage`.
 
-Versión actual: `24`.
+Versión actual: `25`.
 
 ## Licencia
 

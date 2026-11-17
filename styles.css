@@ -109,7 +109,7 @@ html[data-vista="widget"] .fases[data-forma="punto"] .card:not(.abierta){border-
 html[data-vista="widget"] .fases[data-forma="punto"] .card:not(.abierta) h3{--e:min(78cqh,78cqw)}
 html[data-vista="widget"] .fases[data-forma="punto"] .card:not(.abierta):not(:has(h3 [aria-hidden="true"])) > .thumb{width:min(84cqh,84cqw);height:min(84cqh,84cqw);border-radius:2px}
 .hueco{visibility:hidden;pointer-events:none;min-width:0}
-.card.abierta{position:fixed;z-index:21;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:stretch;text-align:left;width:min(560px,calc(100vw - 40px));height:auto;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);margin:0;padding:0;border-radius:18px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.5);cursor:default;touch-action:manipulation}
+.card.abierta{position:fixed;z-index:21;inset:0;display:flex;flex-direction:column;align-items:stretch;text-align:left;width:min(560px,calc(100vw - 40px));height:fit-content;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);margin:auto;padding:0;border-radius:18px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.5);cursor:default;touch-action:manipulation}
 html[data-vista="widget"] .card.abierta{width:calc(100vw - 20px);max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
 .card.abierta .thumb{display:block;flex:0 1 auto;width:100%;height:auto;min-height:0;aspect-ratio:8/5;margin:0;border-radius:0}
 .card.abierta h3{flex:none;min-width:0;margin:12px 16px 4px;font-size:1.15rem;line-height:1.2;white-space:normal}
@@ -120,6 +120,9 @@ html[data-vista="widget"] .card.abierta{width:calc(100vw - 20px);max-height:calc
 .card.abierta .cerrar{position:absolute;top:8px;left:8px;z-index:2;height:32px;padding:0 12px;border:0;border-radius:999px;background:rgba(13,12,22,.72);color:#fff;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .card.abierta .cerrar:hover,.card.abierta .cerrar:focus-visible{background:rgba(13,12,22,.9)}
 .card.abierta .dejar{top:8px;right:8px;z-index:2}
+::view-transition-group(tarjeta),::view-transition-old(tarjeta),::view-transition-new(tarjeta){animation-duration:.28s;animation-timing-function:ease}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.28s}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation-duration:0s!important}}
 html[data-vista="compacta"] .fases{gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));grid-auto-rows:minmax(64px,1fr)}
 html[data-vista="compacta"] .card:not(.abierta){min-width:0;min-height:0;justify-content:center;overflow:hidden;container-type:size;container-name:celda}
 html[data-vista="compacta"] .card:not(.abierta) .thumb{flex:1 1 0;width:100%;height:auto;min-height:0;aspect-ratio:auto}

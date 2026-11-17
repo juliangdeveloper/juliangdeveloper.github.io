@@ -6,6 +6,10 @@
   var pedido = 0;
   var abiertaEn = 0;
   var GRACIA_MS = 450;
+  var actual = null;
+  var transicion = null;
+  var tarjetaVt = null;
+  var NOMBRE_VT = "tarjeta";
   var FORMAS = [
     { id: "nombre", espacio: 8, ancho: 72, alto: 58, razon: 1.6 },
     { id: "icono", espacio: 6, ancho: 28, alto: 28, razon: 1 },
@@ -218,9 +222,76 @@
     return out;
   }
 
-  function cerrarAbierta() {
-    var card = document.querySelector(".card.abierta");
-    if (!card) return;
+  function puedeAnimar() {
+    return typeof document.startViewTransition === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function soltarNombre() {
+    if (!tarjetaVt) return;
+    tarjetaVt.style.removeProperty("view-transition-name");
+    tarjetaVt = null;
+  }
+
+  function ponerNombre(card) {
+    if (tarjetaVt && tarjetaVt !== card) tarjetaVt.style.removeProperty("view-transition-name");
+    tarjetaVt = card;
+    card.style.setProperty("view-transition-name", NOMBRE_VT);
+  }
+
+  function saltarTransicion() {
+    if (transicion && typeof transicion.skipTransition === "function") {
+      try { transicion.skipTransition(); } catch (e) { }
+    }
+  }
+
+  function despuesDeActualizar() {
+    if (!transicion) return Promise.resolve();
+    var p = transicion.updateCallbackDone || transicion.finished;
+    return p && typeof p.then === "function" ? p.then(function () { }, function () { }) : Promise.resolve();
+  }
+
+  function animar(card, cambio) {
+    saltarTransicion();
+    despuesDeActualizar().then(function () {
+      if (!puedeAnimar()) {
+        soltarNombre();
+        cambio();
+        transicion = null;
+        return;
+      }
+      ponerNombre(card);
+      var t;
+      var hecho = false;
+      function unaVez() {
+        if (hecho) return;
+        hecho = true;
+        cambio();
+      }
+      try {
+        t = document.startViewTransition(unaVez);
+      } catch (e) {
+        soltarNombre();
+        unaVez();
+        transicion = null;
+        return;
+      }
+      transicion = t;
+      var fin = t.finished && typeof t.finished.then === "function" ? t.finished : Promise.resolve();
+      return fin.then(function () {
+        if (transicion === t) {
+          transicion = null;
+          soltarNombre();
+        }
+      }, function () {
+        if (transicion === t) {
+          transicion = null;
+          soltarNombre();
+        }
+      });
+    }).catch(function () { });
+  }
+
+  function aplicarCerrar(card) {
     card.classList.remove("abierta");
     card.removeAttribute("role");
     card.removeAttribute("aria-modal");
@@ -238,9 +309,7 @@
     card.focus();
   }
 
-  function abrir(card) {
-    if (!card || card.classList.contains("abierta")) return;
-    cerrarAbierta();
+  function aplicarAbrir(card) {
     var hueco = document.createElement("li");
     hueco.className = "hueco";
     hueco.setAttribute("aria-hidden", "true");
@@ -260,6 +329,32 @@
     if (velo) velo.hidden = false;
     frenarFondo();
     if (cerrar) cerrar.focus();
+  }
+
+  function cerrarAbierta(ya) {
+    var card = document.querySelector(".card.abierta") || actual;
+    if (!card) return;
+    actual = null;
+    if (ya || !puedeAnimar()) {
+      saltarTransicion();
+      soltarNombre();
+      if (card.classList.contains("abierta") || card._hueco) aplicarCerrar(card);
+      return;
+    }
+    animar(card, function () {
+      if (actual) return;
+      if (card.classList.contains("abierta") || card._hueco) aplicarCerrar(card);
+    });
+  }
+
+  function abrir(card) {
+    if (!card || actual === card || card.classList.contains("abierta")) return;
+    cerrarAbierta(true);
+    actual = card;
+    animar(card, function () {
+      if (actual !== card) return;
+      if (!card.classList.contains("abierta")) aplicarAbrir(card);
+    });
   }
 
   function alClickPrevio(e) {
@@ -285,7 +380,7 @@
     if (e.target && e.target.closest && e.target.closest("dialog[open]")) return;
     var abierta = document.querySelector(".card.abierta");
     if (e.key === "Escape") {
-      if (!abierta) return;
+      if (!abierta && !actual) return;
       e.preventDefault();
       cerrarAbierta();
       return;
@@ -311,7 +406,7 @@
 
   function aplicar(id) {
     if (id === vista) return;
-    cerrarAbierta();
+    cerrarAbierta(true);
     vista = id;
     document.documentElement.setAttribute("data-vista", id);
     sincronizar();
@@ -330,6 +425,9 @@
     document.addEventListener("click", alClick);
     document.addEventListener("keydown", alTecla);
     document.addEventListener("portafolio:render", function () {
+      saltarTransicion();
+      soltarNombre();
+      actual = null;
       var sueltas = document.querySelectorAll("body > .card");
       for (var i = 0; i < sueltas.length; i++) sueltas[i].remove();
       if (velo) velo.hidden = true;
