@@ -9,8 +9,11 @@
   }
 
   window.PORTAFOLIO_CONFIG = congelar({
-    VERSION: "25",
+    VERSION: "26",
     CLAVE_MAZMORRA: "portafolio.v1.mazmorra",
+    CLAVE_MODO: "portafolio.v1.modo",
+    MODO_EJECUTIVO: "ejecutivo",
+    MODO_MAZMORRA: "mazmorra",
     VALOR_ON: "1",
     VALOR_OFF: "0",
     FASE_ENERGIA: "6",
@@ -124,7 +127,10 @@
     },
     TEXTOS: {
       AJUSTES: "Ajustes",
+      EJECUTIVO: "Ejecutivo",
+      MODO: "Modo",
       MAZMORRA: "Mazmorra",
+      MODO_AYUDA: "Ejecutivo muestra los proyectos en una lista. Mazmorra los muestra como objetos en las salas.",
       MAZMORRA_AYUDA: "Los proyectos se ven como objetos en las salas.",
       CERRAR: "Cerrar",
       VERSION: "Versión",

@@ -440,6 +440,7 @@
     ui.input.value = "";
     error("");
     ocupado(false);
+    if (window.PORTAFOLIO && window.PORTAFOLIO.abierto()) window.PORTAFOLIO.cerrar(true);
     if (typeof ui.hoja.showModal === "function") ui.hoja.showModal();
     else ui.hoja.setAttribute("open", "");
     ui.input.focus();

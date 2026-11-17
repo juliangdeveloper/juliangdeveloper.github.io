@@ -12,6 +12,8 @@
   var K = "#171110";
   var HL = "#6e645c";
   var ANCHO = 352;
+  var MUNDO_MIN = 375;
+  var mundoW = MUNDO_MIN;
   var HUECO = 16;
   var MURO = 8;
   var MARGEN = 12;
@@ -37,15 +39,7 @@
   var pedido = 0;
   var relojResize = 0;
   var observador = null;
-  var caja = null;
-  var dialogoAjustes = null;
-  var dialogoPila = null;
-  var tituloPila = null;
-  var listaPila = null;
-  var dialogoTrono = null;
-  var dialogoNiveles = null;
-  var tituloNiveles = null;
-  var listaNiveles = null;
+  var pinturaPendiente = false;
   var atlas = null;
   var atlasImg = null;
   var atlasCss = "";
@@ -683,6 +677,23 @@
     };
   }
 
+  function abrirApp(app, origen) {
+    var c = window.PORTAFOLIO;
+    if (!c || !app) return;
+    var card = c.cardDe ? c.cardDe(app) : null;
+    if (card) c.abrirFicha(card, origen);
+  }
+
+  function objetoBoton(app) {
+    var el = document.createElement("button");
+    el.type = "button";
+    el.className = "maz-obj " + claseEstado(app);
+    el.title = app.nombre;
+    el.setAttribute("aria-label", app.nombre);
+    el.addEventListener("click", function () { abrirApp(app, el); });
+    return el;
+  }
+
   function leerSalas() {
     var secs = document.querySelectorAll("main .fases > .fase");
     var salas = [];
@@ -1080,14 +1091,10 @@
   }
 
   function objetoEl(sala, app, cx, by, nivel) {
-    var el = app.href ? document.createElement("a") : document.createElement("span");
-    if (app.href) el.href = app.href;
-    el.className = "maz-obj " + claseEstado(app);
+    var el = objetoBoton(app);
     el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
-    el.title = app.nombre;
-    el.setAttribute("aria-label", app.nombre);
     var asp = aspecto(app);
     var sp = spriteEl(asp.objeto, 2);
     if (sp) {
@@ -1116,14 +1123,10 @@
   }
 
   function fragmentoEl(sala, app, cx, by, nivel) {
-    var el = app.href ? document.createElement("a") : document.createElement("span");
-    if (app.href) el.href = app.href;
-    el.className = "maz-obj " + claseEstado(app);
+    var el = objetoBoton(app);
     el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
-    el.title = app.nombre;
-    el.setAttribute("aria-label", app.nombre);
     var sp = spriteEl(fragmentoDe(app.completadas), 2);
     if (sp) {
       sp.style.position = "absolute";
@@ -1138,14 +1141,10 @@
   }
 
   function cajaEl(sala, app, cx, by, nivel) {
-    var el = app.href ? document.createElement("a") : document.createElement("span");
-    if (app.href) el.href = app.href;
-    el.className = "maz-obj " + claseEstado(app);
+    var el = objetoBoton(app);
     el.style.left = (cx - sala.x - PLACA_W / 2) + "px";
     el.style.top = (by - sala.y - OBJ) + "px";
     el.style.zIndex = String(10000 + by);
-    el.title = app.nombre;
-    el.setAttribute("aria-label", app.nombre);
     var asp = aspecto(app);
     var sp = spriteEl("desc/caja/" + (fnv(semillaDe(app)) % 2), 2);
     if (sp) {
@@ -1212,7 +1211,9 @@
     } else {
       respaldo(el, "cristal", 4, 8, 64, 64);
     }
-    el.addEventListener("click", function () { abrirPila(sala.nombre, apps, el); });
+    el.addEventListener("click", function () {
+      if (window.PORTAFOLIO) window.PORTAFOLIO.abrirPila(sala.nombre, apps, el);
+    });
     return el;
   }
 
@@ -1325,8 +1326,15 @@
     sec.style.zIndex = String(Math.round(sala.y) + 1);
     var titulo = document.createElement("h3");
     titulo.id = "maz-" + sala.fase;
-    titulo.textContent = sala.nombre;
-    titulo.title = sala.nombre;
+    var btnSala = document.createElement("button");
+    btnSala.type = "button";
+    btnSala.className = "maz-sala-pila";
+    btnSala.textContent = sala.nombre;
+    btnSala.title = sala.nombre;
+    btnSala.addEventListener("click", function () {
+      if (window.PORTAFOLIO) window.PORTAFOLIO.abrirPila(sala.nombre, sala.apps, btnSala);
+    });
+    titulo.appendChild(btnSala);
     sec.setAttribute("aria-labelledby", titulo.id);
     var decos = hayDibujo() ? planDeco(sala, nivel.id) : [];
     sec.appendChild(dibujarFondo(sala, nivel, puertas, decos));
@@ -1371,12 +1379,45 @@
     return sec;
   }
 
-  function escalaDe(ancho, altoLibre, altoMundo) {
-    var ew = ancho > 0 ? ancho / 375 : 1;
+  function escalaDe(ancho, altoLibre, altoMundo, anchoMundo) {
+    var w = anchoMundo || mundoW || MUNDO_MIN;
+    var ew = ancho > 0 ? ancho / w : 1;
     var eh = altoMundo > 0 && altoLibre > 8 ? altoLibre / altoMundo : 1;
     var e = Math.min(ew, eh);
     if (!(e > 0)) e = 1;
     return e;
+  }
+
+  function ajustarMundo(salas, nivel, anchoCss, altoLibre) {
+    var lo = MUNDO_MIN;
+    var hi = Math.max(MUNDO_MIN, Math.round(anchoCss || MUNDO_MIN));
+    var mejor = { w: MUNDO_MIN, plan: null, e: 0 };
+    var i, mid, prev, plan, e, ew, eh;
+    ANCHO = MUNDO_MIN - 23;
+    mundoW = MUNDO_MIN;
+    mejor.plan = preparar(salas, nivel);
+    mejor.e = escalaDe(anchoCss, altoLibre, mejor.plan.alto, MUNDO_MIN);
+    for (i = 0; i < 8; i++) {
+      mid = Math.round((lo + hi) / 2);
+      mid = mid - (mid % 16);
+      if (mid < MUNDO_MIN) mid = MUNDO_MIN;
+      if (mid === prev) break;
+      prev = mid;
+      ANCHO = Math.max(128, mid - 23);
+      mundoW = mid;
+      plan = preparar(salas, nivel);
+      ew = anchoCss > 0 ? anchoCss / mid : 1;
+      eh = plan.alto > 0 && altoLibre > 8 ? altoLibre / plan.alto : 1;
+      e = Math.min(ew, eh);
+      if (!(e > 0)) e = 1;
+      if (e > mejor.e || (Math.abs(e - mejor.e) < 0.002 && mid > mejor.w)) mejor = { w: mid, plan: plan, e: e };
+      if (Math.abs(ew - eh) < 0.02) break;
+      if (ew > eh) lo = mid;
+      else hi = mid;
+    }
+    mundoW = mejor.w;
+    ANCHO = Math.max(128, mundoW - 23);
+    return mejor;
   }
 
   function dibujar(salas, nivel, ancho) {
@@ -1390,12 +1431,15 @@
       vacio.className = "maz-vacio";
       vacio.textContent = CFG.TEXTOS.VACIO;
       salasEl.appendChild(vacio);
+      mundoW = MUNDO_MIN;
+      ANCHO = MUNDO_MIN - 23;
       return;
     }
-    var plan = preparar(salas, nivel);
     var altoLibre = lienzoEl ? lienzoEl.clientHeight : 0;
-    var e = escalaDe(ancho, altoLibre, plan.alto);
-    salasEl.style.width = "375px";
+    var mejor = ajustarMundo(salas, nivel, ancho, altoLibre);
+    var plan = mejor.plan;
+    var e = mejor.e;
+    salasEl.style.width = mundoW + "px";
     salasEl.style.height = plan.alto + "px";
     salasEl.style.transform = "scale(" + e + ")";
     salasEl.style.transformOrigin = "top center";
@@ -1430,7 +1474,7 @@
   var temaOriginal = "";
 
   function firmaDe(salas, nivel, ancho) {
-    var partes = [String(ancho), nivel.id, atlasEstado];
+    var partes = [String(ancho), String(lienzoEl ? lienzoEl.clientHeight : 0), String(mundoW), nivel.id, atlasEstado];
     for (var i = 0; i < salas.length; i++) {
       var ids = [];
       for (var j = 0; j < salas[i].apps.length; j++) {
@@ -1446,6 +1490,10 @@
 
   function pintar(forzar) {
     if (!raiz) return;
+    if (window.PORTAFOLIO && window.PORTAFOLIO.abierto()) {
+      pinturaPendiente = true;
+      return;
+    }
     var salas = leerSalas();
     var nivel = nivelDe(finalizados(salas));
     aplicarNivel(nivel);
@@ -1456,7 +1504,7 @@
     var firma = firmaDe(salas, nivel, ancho);
     if (!forzar && firma === firmaActual) return;
     firmaActual = firma;
-    if (dialogoPila && dialogoPila.hasAttribute("open")) cerrarDialogo(dialogoPila);
+    pinturaPendiente = false;
     dibujar(salas, nivel, ancho);
   }
 
@@ -1510,127 +1558,6 @@
     });
   }
 
-  function cerrarFicha() {
-    var b = document.querySelector(".card.abierta .cerrar");
-    if (b) b.click();
-  }
-
-  function sincronizarPausa() {
-    var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    var quieto = encendida && (document.hidden || !enVista || reduce);
-    document.documentElement.classList.toggle("maz-pausa", quieto);
-  }
-
-  function encender() {
-    encendida = true;
-    document.documentElement.classList.add("mazmorra");
-    cerrarFicha();
-    if (fases) fases.hidden = true;
-    asegurarRaiz();
-    sincronizarPausa();
-    pintar(true);
-  }
-
-  function apagar() {
-    var estaba = encendida || document.documentElement.classList.contains("mazmorra");
-    encendida = false;
-    document.documentElement.classList.remove("mazmorra", "maz-pausa");
-    limpiarNivel();
-    clearTimeout(relojResize);
-    if (observador) {
-      observador.disconnect();
-      observador = null;
-    }
-    if (raiz) {
-      raiz.remove();
-      raiz = null;
-      lienzoEl = null;
-      escalaEl = null;
-      salasEl = null;
-    }
-    firmaActual = "";
-    if (fases) fases.hidden = false;
-    if (dialogoPila && dialogoPila.hasAttribute("open")) cerrarDialogo(dialogoPila);
-    if (estaba) window.dispatchEvent(new Event("resize"));
-  }
-
-  function aplicar(on) {
-    if (on) encender();
-    else apagar();
-  }
-
-  function leerOn() {
-    try { return localStorage.getItem(CFG.CLAVE_MAZMORRA) === CFG.VALOR_ON; } catch (e) { return false; }
-  }
-
-  function guardarOn(on) {
-    try { localStorage.setItem(CFG.CLAVE_MAZMORRA, on ? CFG.VALOR_ON : CFG.VALOR_OFF); } catch (e) {}
-  }
-
-  function ajustarHoja(d) {
-    var tope = window.innerHeight - 16;
-    d.style.height = "auto";
-    if (d.scrollHeight > tope) d.style.height = tope + "px";
-  }
-
-  function abrirDialogo(d) {
-    if (typeof d.showModal === "function") d.showModal();
-    else d.setAttribute("open", "");
-  }
-
-  function cerrarDialogo(d) {
-    if (typeof d.close === "function" && d.hasAttribute("open")) d.close();
-    else d.removeAttribute("open");
-  }
-
-  function filaPila(app) {
-    var li = document.createElement("li");
-    var nodo = app.href ? document.createElement("a") : document.createElement("span");
-    if (!app.href) nodo.className = "maz-fila";
-    if (app.href) nodo.href = app.href;
-    var ic = spriteEl(aspecto(app).icono, 2);
-    if (ic) nodo.appendChild(ic);
-    var tx = document.createElement("span");
-    tx.textContent = app.nombre;
-    nodo.appendChild(tx);
-    if (app.bloqueada) {
-      var marca = document.createElement("span");
-      marca.className = "maz-marca";
-      marca.textContent = CFG.TEXTOS.BLOQUEADA;
-      nodo.appendChild(marca);
-    }
-    li.appendChild(nodo);
-    return li;
-  }
-
-  function abrirPila(nombre, apps, disparador) {
-    tituloPila.textContent = nombre;
-    listaPila.replaceChildren();
-    for (var i = 0; i < apps.length; i++) listaPila.appendChild(filaPila(apps[i]));
-    dialogoPila._volver = disparador;
-    abrirDialogo(dialogoPila);
-  }
-
-  function dialogobase(id) {
-    var d = document.createElement("dialog");
-    d.className = "hoja maz-dialog";
-    d.setAttribute("aria-labelledby", id);
-    d.addEventListener("click", function (e) { if (e.target === d) cerrarDialogo(d); });
-    return d;
-  }
-
-  function botonCerrar(d) {
-    var acciones = document.createElement("div");
-    acciones.className = "hoja-acciones";
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "sec";
-    b.textContent = CFG.TEXTOS.CERRAR;
-    b.addEventListener("click", function () { cerrarDialogo(d); });
-    acciones.appendChild(b);
-    return acciones;
-  }
-
   function statsDe(salas) {
     var mapa = {};
     var orden = [];
@@ -1657,99 +1584,6 @@
     out.sort(function (a, b) { return b.exp - a.exp || a.nombre.localeCompare(b.nombre, "es"); });
     for (i = 0; i < out.length; i++) out[i].apps.sort(function (a, b) { return b.exp - a.exp || a.app.nombre.localeCompare(b.app.nombre, "es"); });
     return out;
-  }
-
-  function nodo(tag, clase, texto) {
-    var n = document.createElement(tag);
-    if (clase) n.className = clase;
-    if (texto !== undefined) n.textContent = texto;
-    return n;
-  }
-
-  function insignia(texto) {
-    return nodo("span", "maz-exp", texto);
-  }
-
-  function barra(valor, max) {
-    var b = nodo("span", "maz-barra");
-    b.setAttribute("aria-hidden", "true");
-    var pasos = CFG.STAT_BARRA_PASOS;
-    var llenos = max > 0 ? Math.max(1, Math.round((valor / max) * pasos)) : 0;
-    for (var i = 0; i < pasos; i++) b.appendChild(nodo("span", i < llenos ? "maz-barra-on" : ""));
-    return b;
-  }
-
-  function textoExp(n) {
-    return n + " " + CFG.TEXTOS.EXP;
-  }
-
-  function mostrarLista(stats) {
-    var cuerpo = dialogoTrono.querySelector(".maz-trono-cuerpo");
-    cuerpo.replaceChildren();
-    if (!stats.length) {
-      cuerpo.appendChild(nodo("p", "maz-ayuda", CFG.TEXTOS.SIN_APORTE));
-      return;
-    }
-    cuerpo.appendChild(nodo("p", "maz-ayuda", CFG.TEXTOS.TOCA_STAT));
-    var ul = nodo("ul", "maz-stats");
-    var max = stats[0].exp;
-    stats.forEach(function (st) {
-      var li = nodo("li");
-      var b = nodo("button", "maz-stat");
-      b.type = "button";
-      b.setAttribute("aria-label", st.nombre + ", " + textoExp(st.exp));
-      b.appendChild(nodo("span", "maz-stat-nombre", st.nombre));
-      b.appendChild(insignia(textoExp(st.exp)));
-      b.appendChild(barra(st.exp, max));
-      b.addEventListener("click", function () { mostrarDesglose(st, stats); });
-      li.appendChild(b);
-      ul.appendChild(li);
-    });
-    cuerpo.appendChild(ul);
-    marcarDesborde(ul);
-  }
-
-  function marcarDesborde(ul) {
-    function revisar() {
-      ul.classList.toggle("maz-mas", ul.scrollTop + ul.clientHeight < ul.scrollHeight - 2);
-    }
-    ul.addEventListener("scroll", revisar, { passive: true });
-    if (window.ResizeObserver) new ResizeObserver(revisar).observe(ul);
-    window.requestAnimationFrame(revisar);
-  }
-
-  function mostrarDesglose(st, stats) {
-    var cuerpo = dialogoTrono.querySelector(".maz-trono-cuerpo");
-    cuerpo.replaceChildren();
-    var cab = nodo("div", "maz-desglose-cab");
-    var volver = nodo("button", "maz-boton maz-volver", "‹ " + CFG.TEXTOS.VOLVER);
-    volver.type = "button";
-    volver.addEventListener("click", function () { mostrarLista(stats); });
-    cab.appendChild(volver);
-    var tit = nodo("p", "maz-desglose-titulo");
-    tit.appendChild(nodo("span", "maz-stat-nombre", st.nombre));
-    tit.appendChild(insignia(textoExp(st.exp)));
-    cab.appendChild(tit);
-    cuerpo.appendChild(cab);
-    var ul = nodo("ul", "maz-stats maz-desglose");
-    st.apps.forEach(function (it) {
-      var li = nodo("li", "maz-aporte");
-      var ic = spriteEl(aspecto(it.app).icono, 2);
-      if (ic) li.appendChild(ic);
-      li.appendChild(nodo("span", "maz-aporte-app", it.app.nombre));
-      li.appendChild(nodo("span", "maz-fuente-tag maz-fuente-" + it.fuente, it.fuente === "uso" ? CFG.TEXTOS.USO : CFG.TEXTOS.CREACION));
-      li.appendChild(insignia("+" + it.exp));
-      ul.appendChild(li);
-    });
-    cuerpo.appendChild(ul);
-    marcarDesborde(ul);
-    volver.focus();
-  }
-
-  function abrirTrono(disparador) {
-    mostrarLista(statsDe(leerSalas()));
-    dialogoTrono._volver = disparador;
-    abrirDialogo(dialogoTrono);
   }
 
   function marcoDe(nivel) {
@@ -1781,143 +1615,45 @@
     }
   }
 
-  function textoFaltan(n) {
-    if (n === 1) return CFG.TEXTOS.FALTA_UNO;
-    return CFG.TEXTOS.FALTAN.replace("{n}", String(n));
+  function sincronizarPausa() {
+    var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var quieto = encendida && (document.hidden || !enVista || reduce);
+    document.documentElement.classList.toggle("maz-pausa", quieto);
   }
 
-  function abrirNiveles(disparador) {
-    var n = finalizados(leerSalas());
-    var actual = nivelDe(n);
-    var siguiente = null;
-    var i;
-    for (i = 0; i < CFG.NIVELES.length; i++) {
-      if (CFG.NIVELES[i].min > n) { siguiente = CFG.NIVELES[i]; break; }
+  function encender() {
+    encendida = true;
+    document.documentElement.classList.add("mazmorra");
+    if (fases) fases.hidden = true;
+    asegurarRaiz();
+    sincronizarPausa();
+    pintar(true);
+  }
+
+  function apagar() {
+    var estaba = encendida || (raiz && raiz.isConnected);
+    encendida = false;
+    document.documentElement.classList.remove("maz-pausa");
+    limpiarNivel();
+    clearTimeout(relojResize);
+    if (observador) {
+      observador.disconnect();
+      observador = null;
     }
-    tituloNiveles.textContent = CFG.TEXTOS.NIVELES;
-    listaNiveles.replaceChildren();
-    for (i = 0; i < CFG.NIVELES.length; i++) {
-      var nv = CFG.NIVELES[i];
-      var li = document.createElement("li");
-      li.className = "maz-nivel";
-      if (nv.id === actual.id) li.classList.add("maz-nivel-actual");
-      else if (nv.min > n && !(siguiente && nv.id === siguiente.id)) li.classList.add("maz-nivel-cerrado");
-      var nombre = document.createElement("span");
-      nombre.className = "maz-nivel-nombre";
-      nombre.textContent = nv.nombre;
-      var cond = document.createElement("span");
-      cond.className = "maz-nivel-cond";
-      cond.textContent = nv.min + " " + CFG.TEXTOS.LANZAMIENTOS;
-      li.appendChild(nombre);
-      if (nv.id === actual.id) {
-        var marca = document.createElement("span");
-        marca.className = "maz-marca";
-        marca.textContent = CFG.TEXTOS.ACTUAL;
-        li.appendChild(marca);
-      } else if (siguiente && nv.id === siguiente.id) {
-        var falta = document.createElement("span");
-        falta.className = "maz-nivel-falta";
-        falta.textContent = textoFaltan(nv.min - n);
-        li.appendChild(falta);
-      }
-      li.appendChild(cond);
-      listaNiveles.appendChild(li);
+    if (raiz) {
+      raiz.remove();
+      raiz = null;
+      lienzoEl = null;
+      escalaEl = null;
+      salasEl = null;
     }
-    dialogoNiveles._volver = disparador;
-    abrirDialogo(dialogoNiveles);
-    ajustarHoja(dialogoNiveles);
+    firmaActual = "";
+    pinturaPendiente = false;
+    if (fases) fases.hidden = false;
+    if (estaba) window.dispatchEvent(new Event("resize"));
   }
 
-  function crearDialogos() {
-    dialogoAjustes = dialogobase("maz-ajustes-titulo");
-    var h = document.createElement("h2");
-    h.id = "maz-ajustes-titulo";
-    h.textContent = CFG.TEXTOS.AJUSTES;
-    var fila = document.createElement("label");
-    fila.className = "ajuste-fila";
-    caja = document.createElement("input");
-    caja.type = "checkbox";
-    var nombre = document.createElement("span");
-    nombre.textContent = CFG.TEXTOS.MAZMORRA;
-    fila.appendChild(caja);
-    fila.appendChild(nombre);
-    var ayuda = document.createElement("p");
-    ayuda.className = "ajuste-ayuda";
-    ayuda.textContent = CFG.TEXTOS.MAZMORRA_AYUDA;
-    var version = document.createElement("p");
-    version.className = "ajuste-version";
-    version.textContent = CFG.TEXTOS.VERSION + " " + CFG.VERSION;
-    dialogoAjustes.appendChild(h);
-    dialogoAjustes.appendChild(fila);
-    dialogoAjustes.appendChild(ayuda);
-    dialogoAjustes.appendChild(version);
-    dialogoAjustes.appendChild(botonCerrar(dialogoAjustes));
-    caja.addEventListener("change", function () {
-      guardarOn(caja.checked);
-      aplicar(caja.checked);
-    });
-    dialogoPila = dialogobase("maz-pila-titulo");
-    tituloPila = document.createElement("h2");
-    tituloPila.id = "maz-pila-titulo";
-    listaPila = document.createElement("ul");
-    listaPila.className = "maz-lista";
-    dialogoPila.appendChild(tituloPila);
-    dialogoPila.appendChild(listaPila);
-    dialogoPila.appendChild(botonCerrar(dialogoPila));
-    dialogoPila.addEventListener("close", function () {
-      if (dialogoPila._volver && dialogoPila._volver.focus) dialogoPila._volver.focus();
-    });
-    dialogoTrono = dialogobase("maz-trono-titulo");
-    dialogoTrono.classList.add("maz-pixel", "maz-trono-hoja");
-    var cabTrono = nodo("div", "maz-trono-cab");
-    var mini = nodo("span", "maz-trono-mini");
-    mini.setAttribute("aria-hidden", "true");
-    mini.style.backgroundImage = "url(\"img/mazmorra/trono.png?v=" + CFG.VERSION + "\")";
-    var ht = nodo("h2", "", CFG.TEXTOS.TRONO);
-    ht.id = "maz-trono-titulo";
-    cabTrono.appendChild(mini);
-    cabTrono.appendChild(ht);
-    dialogoTrono.appendChild(cabTrono);
-    dialogoTrono.appendChild(nodo("div", "maz-trono-cuerpo"));
-    dialogoTrono.appendChild(botonCerrar(dialogoTrono));
-    dialogoTrono.addEventListener("close", function () {
-      if (dialogoTrono._volver && dialogoTrono._volver.focus) dialogoTrono._volver.focus();
-    });
-    dialogoNiveles = dialogobase("maz-niveles-titulo");
-    tituloNiveles = document.createElement("h2");
-    tituloNiveles.id = "maz-niveles-titulo";
-    tituloNiveles.textContent = CFG.TEXTOS.NIVELES;
-    listaNiveles = document.createElement("ul");
-    listaNiveles.className = "maz-niveles";
-    dialogoNiveles.appendChild(tituloNiveles);
-    dialogoNiveles.appendChild(listaNiveles);
-    dialogoNiveles.appendChild(botonCerrar(dialogoNiveles));
-    dialogoNiveles.addEventListener("close", function () {
-      if (dialogoNiveles._volver && dialogoNiveles._volver.focus) dialogoNiveles._volver.focus();
-    });
-    document.body.appendChild(dialogoAjustes);
-    document.body.appendChild(dialogoPila);
-    document.body.appendChild(dialogoTrono);
-    document.body.appendChild(dialogoNiveles);
-  }
-
-  function montarBoton() {
-    var acciones = document.querySelector(".hero-acciones");
-    if (!acciones) return;
-    var boton = document.createElement("button");
-    boton.type = "button";
-    boton.className = "agregar ajustes";
-    boton.textContent = CFG.TEXTOS.AJUSTES;
-    boton.setAttribute("aria-haspopup", "dialog");
-    boton.addEventListener("click", function () {
-      caja.checked = leerOn();
-      abrirDialogo(dialogoAjustes);
-      caja.focus();
-    });
-    acciones.appendChild(boton);
-  }
-
-  function asegurarRaiz() {
+    function asegurarRaiz() {
     if (raiz && raiz.isConnected) return;
     raiz = document.createElement("div");
     raiz.className = "mazmorra";
@@ -1932,11 +1668,11 @@
     sprite.setAttribute("aria-hidden", "true");
     sprite.style.backgroundImage = "url(\"img/mazmorra/trono.png?v=" + CFG.VERSION + "\")";
     trono.appendChild(sprite);
-    trono.addEventListener("click", function () { abrirTrono(trono); });
+    trono.addEventListener("click", function () { if (window.PORTAFOLIO) window.PORTAFOLIO.abrirTrono(trono); });
     placaTexto = document.createElement("button");
     placaTexto.type = "button";
     placaTexto.className = "maz-placa-texto";
-    placaTexto.addEventListener("click", function () { abrirNiveles(placaTexto); });
+    placaTexto.addEventListener("click", function () { if (window.PORTAFOLIO) window.PORTAFOLIO.abrirNiveles(placaTexto); });
     placa.appendChild(trono);
     placa.appendChild(placaTexto);
     lienzoEl = document.createElement("div");
@@ -1981,22 +1717,38 @@
     }
     window.addEventListener("storage", function (e) {
       if (e.key && e.key.indexOf(CFG.CLAVE_META) === 0) programar();
-      if (e.key !== CFG.CLAVE_MAZMORRA && e.key !== null) return;
-      var on = leerOn();
-      if (caja) caja.checked = on;
-      if (on !== encendida) aplicar(on);
+    });
+    document.addEventListener("portafolio:panel", function (e) {
+      if (e.detail && e.detail.abierto === false && pinturaPendiente && encendida) {
+        pinturaPendiente = false;
+        pintar(false);
+      }
     });
   }
+
+  window.PORTAFOLIO_MAZ = {
+    salas: leerSalas,
+    leerApp: leerApp,
+    stats: function () { return statsDe(leerSalas()); },
+    finalizados: function () { return finalizados(leerSalas()); },
+    nivel: function () { return nivelDe(finalizados(leerSalas())); },
+    icono: function (app) { return spriteEl(aspecto(app).icono, 2); },
+    render: function () { encender(); },
+    ocultar: function () { apagar(); }
+  };
 
   function iniciar() {
     fases = document.querySelector("main .fases");
     var meta = document.querySelector('meta[name="theme-color"]');
     temaOriginal = meta ? (meta.getAttribute("content") || "") : "";
-    crearDialogos();
-    montarBoton();
     observar();
     cargarAtlas();
-    if (leerOn()) encender();
+    if (window.PORTAFOLIO && window.PORTAFOLIO.registrar) {
+      window.PORTAFOLIO.registrar(CFG.MODO_MAZMORRA, {
+        render: function () { encender(); },
+        ocultar: function () { apagar(); }
+      });
+    }
   }
 
   iniciar();

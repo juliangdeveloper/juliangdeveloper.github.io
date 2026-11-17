@@ -5,7 +5,7 @@
   if (!CFG || !LECTOR) return;
   var T = CFG.TEXTOS;
   var M = CFG.META;
-  var dialogo = null;
+  var nodo = null;
   var texto = null;
   var copiar = null;
   var pendiente = "";
@@ -100,7 +100,7 @@
     var area = el("textarea", "aviso-meta-copia");
     area.value = valor;
     area.setAttribute("readonly", "");
-    dialogo.appendChild(area);
+    nodo.appendChild(area);
     area.select();
     area.setSelectionRange(0, valor.length);
     var ok = false;
@@ -111,7 +111,7 @@
   }
 
   function alCopiar() {
-    var valor = dialogo._prompt || "";
+    var valor = (nodo && nodo._prompt) || "";
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function" && window.isSecureContext) {
       navigator.clipboard.writeText(valor).then(function () { aviso(T.COPIADO); }, function () {
         aviso(respaldo(valor) ? T.COPIADO : T.NO_COPIADO);
@@ -122,22 +122,19 @@
   }
 
   function cerrar() {
-    if (typeof dialogo.close === "function" && dialogo.hasAttribute("open")) dialogo.close();
-    else dialogo.removeAttribute("open");
+    if (window.PORTAFOLIO) window.PORTAFOLIO.cerrar();
   }
 
   function crear() {
-    dialogo = el("dialog", "hoja aviso-meta");
-    dialogo.setAttribute("aria-labelledby", "aviso-meta-titulo");
-    dialogo.setAttribute("aria-describedby", "aviso-meta-texto");
+    nodo = el("div", "aviso-meta");
+    nodo.setAttribute("data-panel", "meta");
+    nodo.setAttribute("aria-labelledby", "aviso-meta-titulo");
+    nodo.setAttribute("aria-describedby", "aviso-meta-texto");
     var h = el("h2", "", T.FALTA_TITULO);
     h.id = "aviso-meta-titulo";
     texto = el("p", "aviso-meta-texto");
     texto.id = "aviso-meta-texto";
     var acciones = el("div", "hoja-acciones aviso-meta-acciones");
-    var cerrarB = el("button", "sec", T.CERRAR);
-    cerrarB.type = "button";
-    cerrarB.addEventListener("click", cerrar);
     copiar = el("button", "sec aviso-meta-copiar", T.COPIAR_PROMPT);
     copiar.type = "button";
     copiar.addEventListener("click", alCopiar);
@@ -146,43 +143,31 @@
     listo.addEventListener("click", function () {
       var destino = pendiente;
       pendiente = "";
-      cerrar();
+      if (window.PORTAFOLIO) window.PORTAFOLIO.cerrar(true);
       if (destino) location.assign(destino);
     });
-    acciones.appendChild(cerrarB);
     acciones.appendChild(copiar);
     acciones.appendChild(listo);
-    dialogo.appendChild(h);
-    dialogo.appendChild(texto);
-    dialogo.appendChild(acciones);
-    dialogo.addEventListener("click", function (e) { if (e.target === dialogo) cerrar(); });
-    dialogo.addEventListener("close", function () {
-      clearTimeout(reloj);
-      copiar.textContent = T.COPIAR_PROMPT;
-      if (dialogo._volver && dialogo._volver.isConnected && dialogo._volver.focus) dialogo._volver.focus();
-    });
-    document.body.appendChild(dialogo);
+    nodo.appendChild(h);
+    nodo.appendChild(texto);
+    nodo.appendChild(acciones);
   }
 
   function abrir(slug, card, href, disparador) {
-    if (!dialogo) crear();
+    if (!nodo) crear();
     var nombre = nombreDe(card, slug);
-    var pixel = document.documentElement.classList.contains("mazmorra");
-    dialogo.classList.toggle("maz-dialog", pixel);
-    dialogo.classList.toggle("maz-pixel", pixel);
     texto.textContent = T.FALTA_TEXTO.replace("{nombre}", nombre);
-    dialogo._prompt = prompt(slug, nombre);
-    dialogo._volver = disparador;
+    nodo._prompt = prompt(slug, nombre);
     pendiente = href;
-    if (typeof dialogo.showModal === "function") dialogo.showModal();
-    else dialogo.setAttribute("open", "");
-    copiar.focus();
+    clearTimeout(reloj);
+    if (copiar) copiar.textContent = T.COPIAR_PROMPT;
+    if (window.PORTAFOLIO) window.PORTAFOLIO.abrir(nodo, disparador);
   }
 
   window.addEventListener("click", function (e) {
     if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
-    if (!a || (dialogo && dialogo.contains(a))) return;
+    if (!a || (nodo && nodo.contains(a))) return;
     var slug = slugDe(a);
     if (!LECTOR.slugValido(slug)) return;
     var card = tarjetaDe(slug);

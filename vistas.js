@@ -1,20 +1,18 @@
 (function () {
   "use strict";
 
+  var CFG = window.PORTAFOLIO_CONFIG;
   var vista = "";
-  var velo = null;
   var pedido = 0;
-  var abiertaEn = 0;
-  var GRACIA_MS = 450;
-  var actual = null;
-  var transicion = null;
-  var tarjetaVt = null;
-  var NOMBRE_VT = "tarjeta";
   var FORMAS = [
     { id: "nombre", espacio: 8, ancho: 72, alto: 58, razon: 1.6 },
     { id: "icono", espacio: 6, ancho: 28, alto: 28, razon: 1 },
     { id: "punto", espacio: 2, ancho: 0, alto: 0, razon: 1 }
   ];
+
+  function core() {
+    return window.PORTAFOLIO;
+  }
 
   function pedirIgualar() {
     if (pedido) return;
@@ -106,15 +104,11 @@
 
   function igualar() {
     var fases = document.querySelector(".fases");
-    if (!fases) return;
+    if (!fases || fases.hidden) return;
+    if (document.documentElement.classList.contains("mazmorra")) return;
     var id = document.documentElement.getAttribute("data-vista");
-    if (id !== "widget") soltar(fases);
-    if (!id || id === "completa") {
-      fases.style.removeProperty("grid-template-rows");
-      return;
-    }
     var lista = grupos(fases);
-    if (!lista.length) {
+    if (!id || !lista.length) {
       soltar(fases);
       fases.style.removeProperty("grid-template-rows");
       return;
@@ -126,11 +120,10 @@
     var crudas = getComputedStyle(fases).gridTemplateColumns;
     var pistas = crudas && crudas !== "none" ? crudas.split(" ").filter(Boolean) : [];
     var cols = pistas.length || 1;
-    var fila = "minmax(128px,1fr)";
-    if (id === "compacta") {
-      var tope = Math.round(parseFloat(pistas[0]) * 0.625 + 130);
-      fila = isFinite(tope) ? "minmax(64px," + Math.max(64, tope) + "px)" : "minmax(64px,1fr)";
-    }
+    var fila = "minmax(0,1fr)";
+    if (id === "compacta") fila = "minmax(64px,1fr)";
+    else if (id === "media") fila = "minmax(110px,1fr)";
+    else fila = "minmax(140px,1fr)";
     fases.style.gridTemplateRows = filasDe(lista, cols, fila);
   }
 
@@ -149,48 +142,6 @@
     return "completa";
   }
 
-  function liberarFondo() {
-    var nodos = document.querySelectorAll("[data-fondo]");
-    for (var i = 0; i < nodos.length; i++) {
-      nodos[i].inert = false;
-      nodos[i].removeAttribute("data-fondo");
-    }
-  }
-
-  function frenarFondo() {
-    liberarFondo();
-    var lista = document.querySelectorAll(".hero, main, footer, .aviso");
-    for (var i = 0; i < lista.length; i++) {
-      lista[i].inert = true;
-      lista[i].setAttribute("data-fondo", "");
-    }
-  }
-
-  function tituloDe(card) {
-    var h3 = card.querySelector("h3");
-    if (!h3) return;
-    if (!h3.id) {
-      var clave = card.getAttribute("data-id") || card.getAttribute("data-app") || "proyecto";
-      h3.id = "proy-" + clave.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    }
-    card.setAttribute("aria-labelledby", h3.id);
-  }
-
-  function asegurarCerrar(card) {
-    if (card.querySelector(":scope > .cerrar")) return;
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "cerrar";
-    b.textContent = "Cerrar";
-    b.hidden = true;
-    b.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      cerrarAbierta();
-    });
-    card.insertBefore(b, card.firstChild);
-  }
-
   function preparar(card) {
     if (card.classList.contains("abierta")) return;
     card.tabIndex = 0;
@@ -201,237 +152,109 @@
       card.removeAttribute("role");
       card.removeAttribute("aria-expanded");
     }
-    asegurarCerrar(card);
   }
 
   function sincronizar() {
     var cards = document.querySelectorAll("li.card");
     for (var i = 0; i < cards.length; i++) preparar(cards[i]);
-    if (!document.querySelector(".card.abierta")) {
-      if (velo) velo.hidden = true;
-      liberarFondo();
-    }
   }
 
-  function focos(card) {
-    var nodos = card.querySelectorAll("a[href], button:not([hidden])");
+  function appsDeSeccion(sec) {
+    var cards = sec.querySelectorAll(":scope > .grid > li.card");
     var out = [];
-    for (var i = 0; i < nodos.length; i++) {
-      if (nodos[i].tabIndex !== -1) out.push(nodos[i]);
+    var maz = window.PORTAFOLIO_MAZ;
+    for (var i = 0; i < cards.length; i++) {
+      if (maz && maz.leerApp) out.push(maz.leerApp(cards[i]));
+      else {
+        var h3 = cards[i].querySelector("h3");
+        var nombre = "";
+        if (h3) {
+          var clon = h3.cloneNode(true);
+          var ocultos = clon.querySelectorAll('[aria-hidden="true"]');
+          for (var j = 0; j < ocultos.length; j++) ocultos[j].remove();
+          nombre = clon.textContent.replace(/\s+/g, " ").trim();
+        }
+        out.push({
+          id: cards[i].getAttribute("data-id") || cards[i].getAttribute("data-app") || "",
+          slug: cards[i].getAttribute("data-app") || "",
+          nombre: nombre
+        });
+      }
     }
     return out;
   }
 
-  function puedeAnimar() {
-    return typeof document.startViewTransition === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }
-
-  function soltarNombre() {
-    if (!tarjetaVt) return;
-    tarjetaVt.style.removeProperty("view-transition-name");
-    tarjetaVt = null;
-  }
-
-  function ponerNombre(card) {
-    if (tarjetaVt && tarjetaVt !== card) tarjetaVt.style.removeProperty("view-transition-name");
-    tarjetaVt = card;
-    card.style.setProperty("view-transition-name", NOMBRE_VT);
-  }
-
-  function saltarTransicion() {
-    if (transicion && typeof transicion.skipTransition === "function") {
-      try { transicion.skipTransition(); } catch (e) { }
-    }
-  }
-
-  function despuesDeActualizar() {
-    if (!transicion) return Promise.resolve();
-    var p = transicion.updateCallbackDone || transicion.finished;
-    return p && typeof p.then === "function" ? p.then(function () { }, function () { }) : Promise.resolve();
-  }
-
-  function animar(card, cambio) {
-    saltarTransicion();
-    despuesDeActualizar().then(function () {
-      if (!puedeAnimar()) {
-        soltarNombre();
-        cambio();
-        transicion = null;
-        return;
-      }
-      ponerNombre(card);
-      var t;
-      var hecho = false;
-      function unaVez() {
-        if (hecho) return;
-        hecho = true;
-        cambio();
-      }
-      try {
-        t = document.startViewTransition(unaVez);
-      } catch (e) {
-        soltarNombre();
-        unaVez();
-        transicion = null;
-        return;
-      }
-      transicion = t;
-      var fin = t.finished && typeof t.finished.then === "function" ? t.finished : Promise.resolve();
-      return fin.then(function () {
-        if (transicion === t) {
-          transicion = null;
-          soltarNombre();
-        }
-      }, function () {
-        if (transicion === t) {
-          transicion = null;
-          soltarNombre();
-        }
+  function atarPila(sec) {
+    var h2 = sec.querySelector(":scope > h2");
+    if (!h2) return;
+    var b = h2.querySelector(":scope > .fase-pila");
+    if (!b) {
+      b = document.createElement("button");
+      b.type = "button";
+      b.className = "fase-pila";
+      b.textContent = h2.textContent.replace(/\s+/g, " ").trim();
+      h2.textContent = "";
+      h2.appendChild(b);
+      b.addEventListener("click", function () {
+        var c = core();
+        if (!c) return;
+        c.abrirPila(b.textContent, appsDeSeccion(sec), b);
       });
-    }).catch(function () { });
-  }
-
-  function aplicarCerrar(card) {
-    card.classList.remove("abierta");
-    card.removeAttribute("role");
-    card.removeAttribute("aria-modal");
-    card.removeAttribute("aria-labelledby");
-    var cerrar = card.querySelector(":scope > .cerrar");
-    if (cerrar) cerrar.hidden = true;
-    if (card._hueco && card._hueco.parentNode) {
-      card._hueco.parentNode.insertBefore(card, card._hueco);
-      card._hueco.remove();
     }
-    card._hueco = null;
-    if (velo) velo.hidden = true;
-    liberarFondo();
-    preparar(card);
-    card.focus();
   }
 
-  function aplicarAbrir(card) {
-    var hueco = document.createElement("li");
-    hueco.className = "hueco";
-    hueco.setAttribute("aria-hidden", "true");
-    if (vista === "completa") hueco.style.minHeight = card.getBoundingClientRect().height + "px";
-    card.after(hueco);
-    card._hueco = hueco;
-    document.body.appendChild(card);
-    abiertaEn = Date.now();
-    card.classList.add("abierta");
-    card.setAttribute("role", "dialog");
-    card.setAttribute("aria-modal", "true");
-    card.removeAttribute("aria-expanded");
-    card.removeAttribute("tabindex");
-    tituloDe(card);
-    var cerrar = card.querySelector(":scope > .cerrar");
-    if (cerrar) cerrar.hidden = false;
-    if (velo) velo.hidden = false;
-    frenarFondo();
-    if (cerrar) cerrar.focus();
-  }
-
-  function cerrarAbierta(ya) {
-    var card = document.querySelector(".card.abierta") || actual;
-    if (!card) return;
-    actual = null;
-    if (ya || !puedeAnimar()) {
-      saltarTransicion();
-      soltarNombre();
-      if (card.classList.contains("abierta") || card._hueco) aplicarCerrar(card);
-      return;
-    }
-    animar(card, function () {
-      if (actual) return;
-      if (card.classList.contains("abierta") || card._hueco) aplicarCerrar(card);
-    });
-  }
-
-  function abrir(card) {
-    if (!card || actual === card || card.classList.contains("abierta")) return;
-    cerrarAbierta(true);
-    actual = card;
-    animar(card, function () {
-      if (actual !== card) return;
-      if (!card.classList.contains("abierta")) aplicarAbrir(card);
-    });
-  }
-
-  function alClickPrevio(e) {
-    if (!abiertaEn || Date.now() - abiertaEn > GRACIA_MS) return;
-    if (!e.target.closest(".card.abierta, .velo")) return;
-    e.preventDefault();
-    e.stopPropagation();
+  function atarPilas() {
+    var secs = document.querySelectorAll("main .fases > .fase");
+    for (var i = 0; i < secs.length; i++) atarPila(secs[i]);
   }
 
   function alClick(e) {
     if (e.defaultPrevented || e.button) return;
-    if (e.target.closest(".dejar, .aviso, .hoja, .agregar, .restaurar, .velo, .cerrar, .links a")) return;
+    if (e.target.closest(".dejar, .aviso, .hoja, .agregar, .restaurar, .velo, .cerrar, .links a, .fase-pila, .panel, .barra-ejecutivo")) return;
     var card = e.target.closest(".card");
     if (!card || card.classList.contains("abierta")) return;
     if (e.target.closest("a[href]") && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return;
     var sel = window.getSelection ? window.getSelection() : null;
     if (sel && !sel.isCollapsed && card.contains(sel.anchorNode)) return;
+    var c = core();
+    if (!c) return;
     e.preventDefault();
-    abrir(card);
+    c.abrirFicha(card, card);
   }
 
   function alTecla(e) {
-    if (e.target && e.target.closest && e.target.closest("dialog[open]")) return;
-    var abierta = document.querySelector(".card.abierta");
-    if (e.key === "Escape") {
-      if (!abierta && !actual) return;
-      e.preventDefault();
-      cerrarAbierta();
-      return;
-    }
-    if (e.key === "Tab" && abierta) {
-      var f = focos(abierta);
-      if (!f.length) return;
-      if (e.shiftKey && document.activeElement === f[0]) {
-        e.preventDefault();
-        f[f.length - 1].focus();
-      } else if (!e.shiftKey && document.activeElement === f[f.length - 1]) {
-        e.preventDefault();
-        f[0].focus();
-      }
-      return;
-    }
+    if (e.target && e.target.closest && e.target.closest("dialog[open], .panel.abierta")) return;
     if (e.key !== "Enter" && e.key !== " ") return;
     if (e.target && e.target.classList && e.target.classList.contains("card") && !e.target.classList.contains("abierta")) {
+      var c = core();
+      if (!c) return;
       e.preventDefault();
-      abrir(e.target);
+      c.abrirFicha(e.target, e.target);
     }
   }
 
   function aplicar(id) {
     if (id === vista) return;
-    cerrarAbierta(true);
+    var c = core();
+    if (c && c.abierto()) c.cerrar(true);
     vista = id;
     document.documentElement.setAttribute("data-vista", id);
     sincronizar();
     pedirIgualar();
   }
 
+  function renderEjecutivo() {
+    var fases = document.querySelector("main .fases");
+    if (fases) fases.hidden = false;
+    atarPilas();
+    sincronizar();
+    pedirIgualar();
+  }
+
   function iniciar() {
-    velo = document.createElement("button");
-    velo.type = "button";
-    velo.className = "velo";
-    velo.hidden = true;
-    velo.setAttribute("aria-label", "Cerrar");
-    velo.addEventListener("click", cerrarAbierta);
-    document.body.appendChild(velo);
-    document.addEventListener("click", alClickPrevio, true);
     document.addEventListener("click", alClick);
     document.addEventListener("keydown", alTecla);
     document.addEventListener("portafolio:render", function () {
-      saltarTransicion();
-      soltarNombre();
-      actual = null;
-      var sueltas = document.querySelectorAll("body > .card");
-      for (var i = 0; i < sueltas.length; i++) sueltas[i].remove();
-      if (velo) velo.hidden = true;
-      liberarFondo();
       sincronizar();
       pedirIgualar();
     });
@@ -447,12 +270,13 @@
       new MutationObserver(pedirIgualar).observe(fases, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
     }
     if (fases && typeof ResizeObserver === "function") {
-      new ResizeObserver(function () {
-        if (vista === "widget") pedirIgualar();
-      }).observe(fases);
+      new ResizeObserver(pedirIgualar).observe(fases);
     }
     window.addEventListener("resize", pedirIgualar);
     window.matchMedia("(max-height: 520px)").addEventListener("change", pedirIgualar);
+    if (core() && core().registrar && CFG) {
+      core().registrar(CFG.MODO_EJECUTIVO, { render: renderEjecutivo });
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);

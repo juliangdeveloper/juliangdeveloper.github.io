@@ -18,7 +18,10 @@
   <script>
     (function () {
       try {
-        if (localStorage.getItem("portafolio.v1.mazmorra") === "1") document.documentElement.classList.add("mazmorra");
+        var m = localStorage.getItem("portafolio.v1.modo");
+        if (m !== "mazmorra" && m !== "ejecutivo") m = localStorage.getItem("portafolio.v1.mazmorra") === "1" ? "mazmorra" : "ejecutivo";
+        document.documentElement.setAttribute("data-modo", m);
+        if (m === "mazmorra") document.documentElement.classList.add("mazmorra");
       } catch (e) {}
     })();
   </script>
@@ -44,13 +47,14 @@
   <meta name="twitter:title" content="Juegos y herramientas gratis en el navegador">
   <meta name="twitter:description" content="Juegos y herramientas gratis en el navegador, sin instalar.">
   <meta name="twitter:image" content="https://juliangdeveloper.github.io/og.jpg">
-  <link rel="stylesheet" href="styles.css?v=25">
-  <script src="config.js?v=25" defer></script>
-  <script src="portafolio.js?v=25" defer></script>
-  <script src="proyecto.js?v=25" defer></script>
-  <script src="aviso.js?v=25" defer></script>
-  <script src="vistas.js?v=25" defer></script>
-  <script src="mazmorra.js?v=25" defer></script>
+  <link rel="stylesheet" href="styles.css?v=26">
+  <script src="config.js?v=26" defer></script>
+  <script src="portafolio.js?v=26" defer></script>
+  <script src="proyecto.js?v=26" defer></script>
+  <script src="panel.js?v=26" defer></script>
+  <script src="aviso.js?v=26" defer></script>
+  <script src="vistas.js?v=26" defer></script>
+  <script src="mazmorra.js?v=26" defer></script>
   <script>if (window.top !== window.self) window.top.location.replace(location.href);</script>
 </head>
 <body>
